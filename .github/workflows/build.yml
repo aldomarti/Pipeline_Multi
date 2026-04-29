@@ -10,7 +10,8 @@ on:
 #     branches:
 #       - main
   workflow_dispatch:
-
+env:
+    TAGS: 1.0.${{ github.run_number }}
 jobs:
   build:
     name: Build
@@ -49,7 +50,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ./**/Dockerfile
           push: false
           tags: dso-lambda-ecr-serverless:${{env.TAGS}}
           load: true
