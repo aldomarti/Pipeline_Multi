@@ -42,13 +42,20 @@ jobs:
           echo " Proyecto seleccionado: $PROYECTO"
           echo "============================================"
 
-          # Leer y exportar todas las variables del proyecto seleccionado
-          while IFS="=" read -r key value; do
-            echo "${key}=${value}" >> $GITHUB_ENV
-          done < <(yq ".$PROYECTO | to_entries | .[] | .key + \"=\" + .value" $CONFIG_FILE)
+          # Leer ecrRepositoryDEV y LambdaDEV del proyecto seleccionado
+          ECR_DEV=$(yq ".$PROYECTO.ecrRepositoryDEV" $CONFIG_FILE)
+          LAMBDA_DEV=$(yq ".$PROYECTO.LambdaDEV" $CONFIG_FILE)
+
+          # Exportar como variables de entorno
+          echo "ecrRepositoryDEV=${ECR_DEV}" >> $GITHUB_ENV
+          echo "LambdaDEV=${LAMBDA_DEV}" >> $GITHUB_ENV
 
           echo "---- Variables cargadas ----"
-          yq ".$PROYECTO | to_entries | .[] | .key + \": \" + .value" $CONFIG_FILE
+          echo "ecrRepositoryDEV: $ECR_DEV"
+          echo "LambdaDEV: $LAMBDA_DEV"
+          echo "============================================"
+          echo "---- Todas las variables de entorno ----"
+          env
           echo "============================================"
 
       # - name: Set up Docker Buildx
