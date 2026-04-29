@@ -34,7 +34,7 @@ jobs:
           proyect=("myproyecto1" "myproyecto2")
           for proy in "${proyect[@]}"; do
             echo "Docker images built $proy"
-            docker buildx build --file ./$proy/Dockerfile --tag $proy:${{env.TAGS}}
+            docker buildx build --file "./$proy/Dockerfile" --tag $proy:${{env.TAGS}}
           done
 
 
