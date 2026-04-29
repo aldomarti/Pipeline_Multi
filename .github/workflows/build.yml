@@ -1,0 +1,123 @@
+name: CI
+run-name: "CI/CD - Build & Push to ECR 1.0.${{ github.run_number }}"
+
+on:
+  push:
+    branches:
+       - main
+#       - develop
+#   pull_request:
+#     branches:
+#       - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC authentication
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # - name: Configure AWS Credentials 1
+      #   id: creds
+      #   uses: aws-actions/configure-aws-credentials@v6.0.0
+      #   with:
+      #     aws-region: ${{ env.AWS_REGION }}
+      #     role-to-assume: ${{ env.ROLE_TO_ASSUME_PADRE }}
+      #     output-credentials: true
+
+      # - name: get caller identity 1
+      #   shell: bash
+      #   run: |
+      #     aws sts get-caller-identity
+
+      # - name: Configure AWS Credentials 2
+      #   uses: aws-actions/configure-aws-credentials@v6.0.0
+      #   with:
+      #     aws-region: ${{ env.AWS_REGION }}
+      #     aws-access-key-id: ${{ steps.creds.outputs.aws-access-key-id }}
+      #     aws-secret-access-key: ${{ steps.creds.outputs.aws-secret-access-key }}
+      #     aws-session-token: ${{ steps.creds.outputs.aws-session-token  }}
+      #     role-to-assume: ${{ env.ROLE_TO_ASSUME_HIJO }}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: dso-lambda-ecr-serverless:${{env.TAGS}}
+          load: true
+      
+      - run: docker images
+        name: List Docker images
+
+      # - run: aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin 251763329048.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+      #   name: Login to ECR
+
+      # - run: docker tag dso-lambda-ecr-serverless:${{env.TAGS}} 251763329048.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{env.TAGS}}
+      #   name: Tag Docker image
+
+      # - run: docker push 251763329048.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{env.TAGS}}
+      #   name: Push Docker image to ECR
+  # DeployDEV:
+  #   name: Deploy dev
+  #   needs: build
+  #   runs-on: 
+  #     group: "sh-dso-uat-cd-cloud-001"
+  #   permissions:
+  #     id-token: write   # requerido para autenticación OIDC con AWS
+  #     contents: read
+  #   #environment: ${{ inputs.environment }}
+  #   # env:
+  #   #   JF_URL: "https://artifactoryibk.jfrog.io/"
+  #   #   JF_REPO_DOWNLOAD: "${{inputs.jfdownload_name}}"
+  #   #   JF_REPO_UPLOAD: "${{inputs.jfupload_name}}"
+  #   #   S3_BUCKET_SCRIPT: "dso-demo-ibk-bigdata-pdcross-verint-dev/${{ inputs.environment }}"
+
+  #   steps:
+  #     # Configura JFrog CLI con las credenciales del secret ARTIFACTORY_ACCESS_TOKEN
+  #     - run: |
+  #         echo "Configuring JFrog CLI..."
+
+  #     - name: Install AWS CLI
+  #       shell: bash
+  #       run: |
+  #         curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+  #         unzip -o awscliv2.zip
+  #         ./aws/install --update --install-dir "$HOME/.local/aws-cli" --bin-dir "$HOME/.local/bin"
+  #         echo "$HOME/.local/bin" >> $GITHUB_PATH
+  #         "$HOME/.local/bin/aws" --version
+
+  #     - name: Configure AWS Credentials 1
+  #       id: creds
+  #       uses: aws-actions/configure-aws-credentials@v6.0.0
+  #       with:
+  #         aws-region: ${{ env.AWS_REGION }}
+  #         role-to-assume: ${{ env.ROLE_TO_ASSUME_PADRE }}
+  #         output-credentials: true
+
+  #     - name: get caller identity 1
+  #       shell: bash
+  #       run: |
+  #         aws sts get-caller-identity
+
+  #     - name: Configure AWS Credentials 2
+  #       uses: aws-actions/configure-aws-credentials@v6.0.0
+  #       with:
+  #         aws-region: ${{ env.AWS_REGION }}
+  #         aws-access-key-id: ${{ steps.creds.outputs.aws-access-key-id }}
+  #         aws-secret-access-key: ${{ steps.creds.outputs.aws-secret-access-key }}
+  #         aws-session-token: ${{ steps.creds.outputs.aws-session-token  }}
+  #         role-to-assume: ${{ env.ROLE_TO_ASSUME_HIJO }}
+
+  #     - run: |
+  #         aws lambda update-function-code \
+  #           --function-name dso-lambda-ecr-serverless-dev \
+  #           --image-uri 251763329048.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{env.TAGS}}
+  #       name: Deploy Lambda function with Docker image
