@@ -24,12 +24,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: mis variables de entorno
+        run: |
+          CONFIG_FILE=".github/workflows/config.yml"
+          proyects=("myproyecto1" "myproyecto2")
+          for proy in "${proyects[@]}"; do
+            echo "${proy}_ecrRepositoryDEV=$(yq ".$proy.ecrRepositoryDEV" $CONFIG_FILE)" >> $GITHUB_ENV
+            echo "${proy}_ecrRepositoryUAT=$(yq ".$proy.ecrRepositoryUAT" $CONFIG_FILE)" >> $GITHUB_ENV
+            echo "${proy}_ecrRepositoryPRD=$(yq ".$proy.ecrRepositoryPRD" $CONFIG_FILE)" >> $GITHUB_ENV
+            echo "${proy}_LambdaDEV=$(yq ".$proy.LambdaDEV" $CONFIG_FILE)" >> $GITHUB_ENV
+            echo "${proy}_LambdaUAT=$(yq ".$proy.LambdaUAT" $CONFIG_FILE)" >> $GITHUB_ENV
+            echo "${proy}_LambdaPRD=$(yq ".$proy.LambdaPRD" $CONFIG_FILE)" >> $GITHUB_ENV
+          done
+
+
       - name: Set up Docker Buildx
         run: |
-          fruits=("Manzana" "Banana" "Naranja" "Mango" "Fresa")
-          for fruit in "${fruits[@]}"; do
-            echo "$fruit"            
-          done
           
           proyect=("myproyecto1" "myproyecto2")
           for proy in "${proyect[@]}"; do

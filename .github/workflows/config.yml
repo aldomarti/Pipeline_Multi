@@ -1,0 +1,15 @@
+myproyecto1: #nombre de la carpeta principal del proyecto
+  ecrRepositoryDEV: "MiRepositorio_dev" #nombre del repositorio en ECR para el ambiente DEV
+  ecrRepositoryUAT: "MiRepositorio_uat" #nombre del repositorio en ECR para el ambiente UAT
+  ecrRepositoryPRD: "MiRepositorio_prd" #nombre del repositorio en ECR para el ambiente PRD
+  LambdaDEV: "MiLambda_dev" #nombre de la función Lambda para el ambiente DEV
+  LambdaUAT: "MiLambda_uat" #nombre de la función Lambda para el ambiente UAT
+  LambdaPRD: "MiLambda_prd" #nombre de la función Lambda para el ambiente PRD
+
+myproyecto2:
+  ecrRepositoryDEV: "MiRepositorio_dev"
+  ecrRepositoryUAT: "MiRepositorio_uat"
+  ecrRepositoryPRD: "MiRepositorio_prd"
+  LambdaDEV: "MiLambda_dev"
+  LambdaUAT: "MiLambda_uat"
+  LambdaPRD: "MiLambda_prd"
