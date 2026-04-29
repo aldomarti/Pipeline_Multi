@@ -34,6 +34,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: proyecto
+        run: |
+          echo "Proyecto seleccionado: ${{ inputs.proyectos || 'myproyecto1' }}"
+        
       - name: Carga de variables
         run: |
           # Stop execution if any command fails
@@ -44,7 +48,6 @@ jobs:
           #############
           config=$(cat ./config.yml)
           echo "$config"
-          echo ${{  inputs.proyectos.value }}
           #############
           #Parametros que se aplican en el despliegue, se obtienen del archivo config.yml
           #############
