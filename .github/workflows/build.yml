@@ -37,6 +37,9 @@ jobs:
             echo "${proy}_LambdaPRD=$(yq ".$proy.LambdaPRD" $CONFIG_FILE)" >> $GITHUB_ENV
           done
 
+          echo "---- Variables de entorno cargadas ----"
+          env | grep -E "^(myproyecto1|myproyecto2)_"
+
 
       - name: Set up Docker Buildx
         run: |
