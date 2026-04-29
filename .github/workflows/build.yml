@@ -14,7 +14,7 @@ on:
       proyectos:
         description: 'Selecciona el proyecto a desplegar'
         required: true
-        default: ''
+        default: 'myproyecto1'
         type: choice
         options:
           - myproyecto1
@@ -42,19 +42,35 @@ jobs:
           #############
           #Obtener el archivo config.yml
           #############
-          config=$(cat ./config.yml)
+          config=$(cat .github/workflows/config.yml)
           echo "$config"
           
           #############
           #Parametros que se aplican en el despliegue, se obtienen del archivo config.yml
           #############
           echo "Obteniendo parametros del deployment"
-          ecrRepoDEV=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].ecrRepositoryDEV' -)
-          ecrRepoUAT=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].ecrRepositoryUAT' -)
-          ecrRepoPRD=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].ecrRepositoryPRD' -)
-          LambDEV=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].LambdaDEV' -)
-          LambUAT=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].LambdaUAT' -)
-          LambPRD=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].LambdaPRD' -)
+
+          # Iterar las claves del archivo config.yml y ubicar el proyecto seleccionado
+          PROYECTO="${{ inputs.proyectos }}"
+          encontrado=false
+          for key in $(echo "$config" | yq e 'keys | .[]' -); do
+            if [ "$key" == "$PROYECTO" ]; then
+              encontrado=true
+              echo "Proyecto encontrado: $key"
+              ecrRepoDEV=$(echo "$config" | yq e ".${key}.ecrRepositoryDEV" -)
+              ecrRepoUAT=$(echo "$config" | yq e ".${key}.ecrRepositoryUAT" -)
+              ecrRepoPRD=$(echo "$config" | yq e ".${key}.ecrRepositoryPRD" -)
+              LambDEV=$(echo "$config" | yq e ".${key}.LambdaDEV" -)
+              LambUAT=$(echo "$config" | yq e ".${key}.LambdaUAT" -)
+              LambPRD=$(echo "$config" | yq e ".${key}.LambdaPRD" -)
+              break
+            fi
+          done
+
+          if [ "$encontrado" == "false" ]; then
+            echo "ERROR: Proyecto '$PROYECTO' no encontrado en config.yml"
+            exit 1
+          fi
           
 
           echo "ECR Repository DEV: $ecrRepoDEV"
