@@ -50,7 +50,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./**/Dockerfile
+          file: ./myproyecto1/Dockerfile
           push: false
           tags: dso-lambda-ecr-serverless:${{env.TAGS}}
           load: true
