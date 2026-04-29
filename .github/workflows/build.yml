@@ -19,6 +19,7 @@ on:
         options:
           - myproyecto1
           - myproyecto2
+          - myproyecto3
 
 env:
     TAGS: 1.0.${{ github.run_number }}
