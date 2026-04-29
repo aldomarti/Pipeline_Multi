@@ -51,8 +51,8 @@ jobs:
           echo "Obteniendo parametros del deployment"
 
           # Iterar las claves del archivo config.yml y ubicar el proyecto seleccionado
-          echo "Mi proyecto: ${{ inputs.proyectos }}"
-          PROYECTO="${{ inputs.proyectos }}"
+          PROYECTO="${{ inputs.proyectos || 'myproyecto1' }}"
+          echo "Mi proyecto: $PROYECTO"
           encontrado=false
           for key in $(echo "$config" | yq e 'keys | .[]' -); do
             if [ "$key" == "$PROYECTO" ]; then
