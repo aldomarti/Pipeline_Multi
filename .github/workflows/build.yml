@@ -42,7 +42,7 @@ jobs:
           #############
           #Obtener el archivo config.yml
           #############
-          config=$(cat .github/workflows/config.yml)
+          config=$(cat ./config.yml)
           echo "$config"
           
           #############
