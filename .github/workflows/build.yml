@@ -12,13 +12,14 @@ on:
   workflow_dispatch:
     inputs:
       proyectos:
-        description: "Proyecto a desplegar"
+        description: 'Selecciona el proyecto a desplegar'
         required: true
-        default: "myproyecto1"
+        default: ''
         type: choice
         options:
           - myproyecto1
           - myproyecto2
+
 env:
     TAGS: 1.0.${{ github.run_number }}
 jobs:
@@ -48,20 +49,20 @@ jobs:
           #Parametros que se aplican en el despliegue, se obtienen del archivo config.yml
           #############
           echo "Obteniendo parametros del deployment"
-          ecrRepositoryDEV=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].ecrRepositoryDEV' -)
-          ecrRepositoryUAT=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].ecrRepositoryUAT' -)
-          ecrRepositoryPRD=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].ecrRepositoryPRD' -)
-          LambdaDEV=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].LambdaDEV' -)
-          LambdaUAT=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].LambdaUAT' -)
-          LambdaPRD=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].LambdaPRD' -)
+          ecrRepoDEV=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].ecrRepositoryDEV' -)
+          ecrRepoUAT=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].ecrRepositoryUAT' -)
+          ecrRepoPRD=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].ecrRepositoryPRD' -)
+          LambDEV=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].LambdaDEV' -)
+          LambUAT=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].LambdaUAT' -)
+          LambPRD=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].LambdaPRD' -)
           
 
-          echo "ECR Repository DEV: $ecrRepositoryDEV"
-          echo "ECR Repository UAT: $ecrRepositoryUAT"
-          echo "ECR Repository PRD: $ecrRepositoryPRD"
-          echo "Lambda DEV: $LambdaDEV"
-          echo "Lambda UAT: $LambdaUAT"
-          echo "Lambda PRD: $LambdaPRD"
+          echo "ECR Repository DEV: $ecrRepoDEV"
+          echo "ECR Repository UAT: $ecrRepoUAT"
+          echo "ECR Repository PRD: $ecrRepoPRD"
+          echo "Lambda DEV: $LambDEV"
+          echo "Lambda UAT: $LambUAT"
+          echo "Lambda PRD: $LambPRD"
 
       # - name: Set up Docker Buildx
       #   run: |
