@@ -44,7 +44,7 @@ jobs:
           #############
           config=$(cat ./config.yml)
           echo "$config"
-          
+          echo ${{  inputs.proyectos.value }}
           #############
           #Parametros que se aplican en el despliegue, se obtienen del archivo config.yml
           #############
