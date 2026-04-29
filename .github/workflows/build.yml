@@ -77,7 +77,7 @@ jobs:
             exit 1
           fi
           
-
+          echo "Mi proyecto: "${{ inputs.proyectos || 'myproyecto1' }}""
           echo "ECR Repository DEV: $ecrRepoDEV"
           echo "ECR Repository UAT: $ecrRepoUAT"
           echo "ECR Repository PRD: $ecrRepoPRD"
