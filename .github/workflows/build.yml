@@ -35,9 +35,9 @@ jobs:
 
           for proy in "${proyect[@]}"; do
             echo "Docker images built $proy"
-            pathfile="./$proy/Dockerfile"
-            tag="$proy:${{env.TAGS}}"
-            docker buildx build --file "$pathfile" --tag "$tag"
+            pathfile=./$proy/Dockerfile
+            tag=$proy:${{env.TAGS}}
+            docker buildx build --file $pathfile --tag $tag
           done
 
 
