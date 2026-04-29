@@ -35,28 +35,33 @@ jobs:
 
       - name: Carga de variables
         run: |
-          CONFIG_FILE=".github/workflows/config.yml"
-          PROYECTO="${{ inputs.proyectos }}"
+          # Stop execution if any command fails
+          set -e
 
-          echo "============================================"
-          echo " Proyecto seleccionado: $PROYECTO"
-          echo "============================================"
+          #############
+          #Obtener el archivo config.yml
+          #############
+          config=$(cat ./config.yml)
+          echo "$config"
+          
+          #############
+          #Parametros que se aplican en el despliegue, se obtienen del archivo config.yml
+          #############
+          echo "Obteniendo parametros del deployment"
+          ecrRepositoryDEV=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].ecrRepositoryDEV' -)
+          ecrRepositoryUAT=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].ecrRepositoryUAT' -)
+          ecrRepositoryPRD=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].ecrRepositoryPRD' -)
+          LambdaDEV=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].LambdaDEV' -)
+          LambdaUAT=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].LambdaUAT' -)
+          LambdaPRD=$(echo "$config" | yq e '.["${{ inputs.proyectos }}"].LambdaPRD' -)
+          
 
-          # Leer ecrRepositoryDEV y LambdaDEV del proyecto seleccionado
-          ECR_DEV=$(yq ".$PROYECTO.ecrRepositoryDEV" $CONFIG_FILE)
-          LAMBDA_DEV=$(yq ".$PROYECTO.LambdaDEV" $CONFIG_FILE)
-
-          # Exportar como variables de entorno
-          echo "ecrRepositoryDEV=${ECR_DEV}" >> $GITHUB_ENV
-          echo "LambdaDEV=${LAMBDA_DEV}" >> $GITHUB_ENV
-
-          echo "---- Variables cargadas ----"
-          echo "ecrRepositoryDEV: $ECR_DEV"
-          echo "LambdaDEV: $LAMBDA_DEV"
-          echo "============================================"
-          echo "---- Todas las variables de entorno ----"
-          env
-          echo "============================================"
+          echo "ECR Repository DEV: $ecrRepositoryDEV"
+          echo "ECR Repository UAT: $ecrRepositoryUAT"
+          echo "ECR Repository PRD: $ecrRepositoryPRD"
+          echo "Lambda DEV: $LambdaDEV"
+          echo "Lambda UAT: $LambdaUAT"
+          echo "Lambda PRD: $LambdaPRD"
 
       # - name: Set up Docker Buildx
       #   run: |
