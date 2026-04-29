@@ -10,6 +10,16 @@ on:
 #     branches:
 #       - main
   workflow_dispatch:
+    inputs:
+      ambiente:
+        description: "Ambiente de despliegue"
+        required: true
+        default: "myproyecto1"
+        type: choice
+        options:
+          - myproyecto1
+          - myproyecto2
+          - myproyecto3
 env:
     TAGS: 1.0.${{ github.run_number }}
 jobs:
@@ -24,21 +34,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: mis variables de entorno
-        run: |
-          CONFIG_FILE=".github/workflows/config.yml"
-          proyects=("myproyecto1" "myproyecto2")
-          for proy in "${proyects[@]}"; do
-            echo "${proy}_ecrRepositoryDEV=$(yq ".$proy.ecrRepositoryDEV" $CONFIG_FILE)" >> $GITHUB_ENV
-            echo "${proy}_ecrRepositoryUAT=$(yq ".$proy.ecrRepositoryUAT" $CONFIG_FILE)" >> $GITHUB_ENV
-            echo "${proy}_ecrRepositoryPRD=$(yq ".$proy.ecrRepositoryPRD" $CONFIG_FILE)" >> $GITHUB_ENV
-            echo "${proy}_LambdaDEV=$(yq ".$proy.LambdaDEV" $CONFIG_FILE)" >> $GITHUB_ENV
-            echo "${proy}_LambdaUAT=$(yq ".$proy.LambdaUAT" $CONFIG_FILE)" >> $GITHUB_ENV
-            echo "${proy}_LambdaPRD=$(yq ".$proy.LambdaPRD" $CONFIG_FILE)" >> $GITHUB_ENV
-          done
+      # - name: mis variables de entorno
+      #   run: |
+      #     CONFIG_FILE=".github/workflows/config.yml"
+      #     proyects=("myproyecto1" "myproyecto2")
+      #     for proy in "${proyects[@]}"; do
+      #       echo "${proy}_ecrRepositoryDEV=$(yq ".$proy.ecrRepositoryDEV" $CONFIG_FILE)" >> $GITHUB_ENV
+      #       echo "${proy}_ecrRepositoryUAT=$(yq ".$proy.ecrRepositoryUAT" $CONFIG_FILE)" >> $GITHUB_ENV
+      #       echo "${proy}_ecrRepositoryPRD=$(yq ".$proy.ecrRepositoryPRD" $CONFIG_FILE)" >> $GITHUB_ENV
+      #       echo "${proy}_LambdaDEV=$(yq ".$proy.LambdaDEV" $CONFIG_FILE)" >> $GITHUB_ENV
+      #       echo "${proy}_LambdaUAT=$(yq ".$proy.LambdaUAT" $CONFIG_FILE)" >> $GITHUB_ENV
+      #       echo "${proy}_LambdaPRD=$(yq ".$proy.LambdaPRD" $CONFIG_FILE)" >> $GITHUB_ENV
+      #     done
 
-          echo "---- Variables de entorno cargadas ----"
-          env | grep -E "^(myproyecto1|myproyecto2)_"
+      #     echo "---- Variables de entorno cargadas ----"
+      #     env | grep -E "^(myproyecto1|myproyecto2)_"
 
 
       - name: Set up Docker Buildx
