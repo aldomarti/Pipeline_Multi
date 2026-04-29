@@ -28,7 +28,13 @@ jobs:
         run: |
           fruits=("Manzana" "Banana" "Naranja" "Mango" "Fresa")
           for fruit in "${fruits[@]}"; do
-            echo "$fruit"
+            echo "$fruit"            
+          done
+          
+          proyect=("myproyecto1" "myproyecto2")
+          for proy in "${proyect[@]}"; do
+            echo "Docker images built $proy"
+            docker buildx build --file ./$proy/Dockerfile --tag $proy:${{env.TAGS}}
           done
 
 
