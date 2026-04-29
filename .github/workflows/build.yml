@@ -39,6 +39,8 @@ jobs:
             docker buildx build --file $pathfile --tag $tag .
           done
 
+          docker images
+
 
       # - name: Build Docker image 2
       #   run: |
