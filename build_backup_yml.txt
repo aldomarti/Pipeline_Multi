@@ -54,22 +54,20 @@ jobs:
           #############
           echo "Obteniendo parametros del deployment"
 
-          # Iterar el array del archivo config.yml y comparar por proyectoid
+          # Iterar las claves del archivo config.yml y ubicar el proyecto seleccionado
           PROYECTO="${{ inputs.proyectos || 'myproyecto1' }}"
           echo "Mi proyecto: $PROYECTO"
           encontrado=false
-          count=$(echo "$config" | yq e '.proyectos | length' -)
-          for i in $(seq 0 $(($count - 1))); do
-            pid=$(echo "$config" | yq e ".proyectos[$i].proyectoid" -)
-            if [ "$pid" == "$PROYECTO" ]; then
+          for key in $(echo "$config" | yq e 'keys | .[]' -); do
+            if [ "$key" == "$PROYECTO" ]; then
               encontrado=true
-              echo "Proyecto encontrado: $pid"
-              ecrRepoDEV=$(echo "$config" | yq e ".proyectos[$i].ecrRepositoryDEV" -)
-              ecrRepoUAT=$(echo "$config" | yq e ".proyectos[$i].ecrRepositoryUAT" -)
-              ecrRepoPRD=$(echo "$config" | yq e ".proyectos[$i].ecrRepositoryPRD" -)
-              LambDEV=$(echo "$config" | yq e ".proyectos[$i].LambdaDEV" -)
-              LambUAT=$(echo "$config" | yq e ".proyectos[$i].LambdaUAT" -)
-              LambPRD=$(echo "$config" | yq e ".proyectos[$i].LambdaPRD" -)
+              echo "Proyecto encontrado: $key"
+              ecrRepoDEV=$(echo "$config" | yq e ".${key}.ecrRepositoryDEV" -)
+              ecrRepoUAT=$(echo "$config" | yq e ".${key}.ecrRepositoryUAT" -)
+              ecrRepoPRD=$(echo "$config" | yq e ".${key}.ecrRepositoryPRD" -)
+              LambDEV=$(echo "$config" | yq e ".${key}.LambdaDEV" -)
+              LambUAT=$(echo "$config" | yq e ".${key}.LambdaUAT" -)
+              LambPRD=$(echo "$config" | yq e ".${key}.LambdaPRD" -)
               break
             fi
           done
