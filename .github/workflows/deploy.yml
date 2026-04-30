@@ -1,5 +1,5 @@
 name: CD
-run-name: "CD - Deploy to Lambda 1.0.${{ github.run_number }}"
+run-name: "CD - Deploy to Lambda 1.0.${{ github.event.workflow_run.run_number || inputs.ci_build_number }}"
 
 on:
   workflow_run:
@@ -20,9 +20,14 @@ on:
           - myproyecto1
           - myproyecto2
           - myproyecto3
+      ci_build_number:
+        description: 'Build number del pipeline CI (ej: 42)'
+        required: true
+        default: '0'
+        type: string
 
 env:
-    TAGS: 1.0.${{ github.run_number }}
+    TAGS: 1.0.${{ github.event.workflow_run.run_number || inputs.ci_build_number }}
 jobs:
   Deploy:
     name: Deploy DEV
