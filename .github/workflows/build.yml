@@ -23,8 +23,6 @@ on:
 
 env:
     TAGS: 1.0.${{ github.run_number }}
-    AWS_REGION: "us-east-1"
-    AWS_USER: "251763329048"
 jobs:
   build:
     name: Build
@@ -37,11 +35,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Cargar variables de entorno
+        run: |
+          VARS_FILE="./variables/build/default.yml"
+          echo "---- Cargando variables desde $VARS_FILE ----"
+          echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_USER=$(yq e '.AWS_USER' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_REGION: $(yq e '.AWS_REGION' $VARS_FILE)"
+          echo "AWS_USER:   $(yq e '.AWS_USER' $VARS_FILE)"
+          echo "---------------------------------------------"
       - name: proyecto
         run: |
           echo "Proyecto seleccionado: ${{ inputs.proyectos || 'person-connect' }}"
         
-      - name: Carga de variables y Build
+      - name: Docker Build
         run: |
           set -e
 
