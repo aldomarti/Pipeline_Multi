@@ -83,7 +83,8 @@ jobs:
           echo "============================================"
 
           # Login a ECR
-          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_USER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          echo "Login a ECR"
+          echo "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_USER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
 
           echo "---- Proyectos a promover ----"
           yq e '.proyectos[] | .proyectoid + " | DEV: " + .ecrRepositoryDEV + " | UAT: " + .ecrRepositoryUAT' ./config.yml
