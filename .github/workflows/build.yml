@@ -80,15 +80,44 @@ jobs:
             echo "docker push $ecr_uri"
             echo "docker push $ecr_uri"
           done
+  Deploy:
+    name: Deploy DEV
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC authentication
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      # - name: Build Docker image 2
-      #   run: |
-      #     echo "Docker images built successfully"
-      #     docker buildx build --file ./myproyecto1/Dockerfile --tag dso-lambda-ecr-serverless:${{env.TAGS}}
-      #     echo "Docker images tags successfully"
-      #     docker build -t dso-lambda-ecr-serverless:${{env.TAGS}} -f ./myproyecto2/Dockerfile .
-      #     echo "Docker images list"
-      #     docker images
-      
-      # - run: docker images
-      #   name: List Docker images
+      - name: Deploy to Lambda DEV
+        run: |  
+          echo "Desplegando a Lambda DEV"
+          PROYECTO="${{ inputs.proyectos || 'myproyecto1' }}"
+
+          # Buscar el proyecto en config.yml por proyectoid
+          count=$(yq e '.proyectos | length' ./config.yml)
+          encontrado=false
+          for i in $(seq 0 $(($count - 1))); do
+            pid=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
+            if [ "$pid" == "$PROYECTO" ]; then
+              encontrado=true
+              proyectoid=$pid
+              ecrRepositoryDEV=$(yq e ".proyectos[$i].ecrRepositoryDEV" ./config.yml)
+              LambdaDEV=$(yq e ".proyectos[$i].LambdaDEV" ./config.yml)
+              break
+            fi
+          done
+
+          if [ "$encontrado" == "false" ]; then
+            echo "ERROR: Proyecto '$PROYECTO' no encontrado en config.yml"
+            exit 1
+          fi
+
+          echo "---- Variables cargadas ----"
+          echo "proyectoid:       $proyectoid"
+          echo "ecrRepositoryDEV: $ecrRepositoryDEV"
+          echo "LambdaDEV:        $LambdaDEV"
+          echo "----------------------------"
+
+          echo "aws lambda update-function-code --function-name $LambdaDEV --image-uri ${{ env.AWS_USER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrRepositoryDEV:${{ env.TAGS }}"
