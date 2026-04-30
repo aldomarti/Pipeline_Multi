@@ -12,7 +12,16 @@ on:
   workflow_dispatch:
     inputs:
       proyectos:
-        description: 'Selecciona el proyecto a desplegar'
+        description: 'Selecciona el proyecto a compilar (Build)'
+        required: true
+        default: 'myproyecto1'
+        type: choice
+        options:
+          - myproyecto1
+          - myproyecto2
+          - myproyecto3
+      deploy_proyectos:
+        description: 'Selecciona el proyecto a desplegar (Deploy)'
         required: true
         default: 'myproyecto1'
         type: choice
@@ -94,7 +103,7 @@ jobs:
       - name: Deploy to Lambda DEV
         run: |  
           echo "Desplegando a Lambda DEV"
-          PROYECTO="${{ inputs.proyectos || 'myproyecto1' }}"
+          PROYECTO="${{ inputs.deploy_proyectos || 'myproyecto1' }}"
 
           # Buscar el proyecto en config.yml por proyectoid
           count=$(yq e '.proyectos | length' ./config.yml)
