@@ -49,13 +49,16 @@ jobs:
           yq e '.proyectos[].proyectoid' ./config.yml
           echo "---------------------------------------------"
 
-          # Iterar cada proyectoid y ejecutar docker buildx build
-          while IFS= read -r proy; do
-            echo "Docker images built: $proy"
-            pathfile=./$proy/Dockerfile
+          # Iterar cada proyecto y ejecutar docker buildx build
+          count=$(yq e '.proyectos | length' ./config.yml)
+          for i in $(seq 0 $(($count - 1))); do
+            proy=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
+            pathfile=$(yq e ".proyectos[$i].dockerfilePath" ./config.yml)
             tag=$proy:${{ env.TAGS }}
-            docker buildx build --file $pathfile --tag $tag .
-          done < <(yq e '.proyectos[].proyectoid' ./config.yml)
+            echo "Docker images built: $proy"
+            echo "Dockerfile path: $pathfile"
+            docker buildx build --file .$pathfile --tag $tag .
+          done
 
           docker images
 

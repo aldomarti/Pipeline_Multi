@@ -1,5 +1,6 @@
 proyectos:
-  - proyectoid: "myproyecto1" #nombre de la carpeta principal del proyecto
+  - proyectoid: "person-connect" #nombre de la carpeta principal del proyecto
+    dockerfilePath: "/ingesta/lambdas/person-connect/Dockerfile" #nombre del Dockerfile dentro de la carpeta del proyecto
     ecrRepositoryDEV: "MiRepositorio_dev_1" #nombre del repositorio en ECR para el ambiente DEV
     ecrRepositoryUAT: "MiRepositorio_uat_1" #nombre del repositorio en ECR para el ambiente UAT
     ecrRepositoryPRD: "MiRepositorio_prd_1" #nombre del repositorio en ECR para el ambiente PRD
@@ -7,7 +8,8 @@ proyectos:
     LambdaUAT: "MiLambda_uat_1" #nombre de la función Lambda para el ambiente UAT
     LambdaPRD: "MiLambda_prd_1" #nombre de la función Lambda para el ambiente PRD
 
-  - proyectoid: "myproyecto2"
+  - proyectoid: "person-login"
+    dockerfilePath: "/ingesta/lambdas/person-login/Dockerfile"
     ecrRepositoryDEV: "MiRepositorio_dev_2"
     ecrRepositoryUAT: "MiRepositorio_uat_2"
     ecrRepositoryPRD: "MiRepositorio_prd_2"
@@ -15,7 +17,8 @@ proyectos:
     LambdaUAT: "MiLambda_uat_2"
     LambdaPRD: "MiLambda_prd_2"
 
-  - proyectoid: "myproyecto3"
+  - proyectoid: "person-process"
+    dockerfilePath: "/transformacion/lambdas/person-process/Dockerfile"
     ecrRepositoryDEV: "MiRepositorio_dev_3"
     ecrRepositoryUAT: "MiRepositorio_uat_3"
     ecrRepositoryPRD: "MiRepositorio_prd_3"
