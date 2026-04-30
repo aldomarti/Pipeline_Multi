@@ -28,7 +28,7 @@ on:
 
 jobs:
   Promover:
-    name: Deploy UAT
+    name: Promover imagen
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     permissions:
@@ -119,6 +119,7 @@ jobs:
     name: Deploy UAT
     needs: Promover
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     permissions:
       contents: read
       id-token: write  # Required for OIDC authentication
@@ -155,7 +156,7 @@ jobs:
 
       - name: Cargar variables de entorno
         run: |
-          VARS_FILE="./variables/dev/default.yml"
+          VARS_FILE="./variables/uat/default.yml"
           echo "---- Cargando variables desde $VARS_FILE ----"
           echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
           echo "AWS_USER=$(yq e '.AWS_USER' $VARS_FILE)" >> $GITHUB_ENV
@@ -163,7 +164,7 @@ jobs:
           echo "AWS_USER:   $(yq e '.AWS_USER' $VARS_FILE)"
           echo "---------------------------------------------"
 
-      - name: Deploy to Lambda DEV
+      - name: Deploy to Lambda UAT
         run: |  
           echo "============================================"
           echo " Tag a desplegar: ${{ env.TAGS }}"
@@ -178,8 +179,8 @@ jobs:
             if [ "$pid" == "$PROYECTO" ]; then
               encontrado=true
               proyectoid=$pid
-              ecrRepositoryDEV=$(yq e ".proyectos[$i].ecrRepositoryDEV" ./config.yml)
-              LambdaDEV=$(yq e ".proyectos[$i].LambdaDEV" ./config.yml)
+              ecrRepositoryUAT=$(yq e ".proyectos[$i].ecrRepositoryUAT" ./config.yml)
+              LambdaUAT=$(yq e ".proyectos[$i].LambdaUAT" ./config.yml)
               break
             fi
           done
@@ -191,8 +192,8 @@ jobs:
 
           echo "---- Variables cargadas ----"
           echo "proyectoid:       $proyectoid"
-          echo "ecrRepositoryDEV: $ecrRepositoryDEV"
-          echo "LambdaDEV:        $LambdaDEV"
+          echo "ecrRepositoryUAT: $ecrRepositoryUAT"
+          echo "LambdaUAT:        $LambdaUAT"
           echo "----------------------------"
 
-          echo "aws lambda update-function-code --function-name $LambdaDEV --image-uri ${{ env.AWS_USER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrRepositoryDEV:${{ env.TAGS }}"
+          echo "aws lambda update-function-code --function-name $LambdaUAT --image-uri ${{ env.AWS_USER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrRepositoryUAT:${{ env.TAGS }}"
