@@ -1,5 +1,5 @@
 name: CD_UAT
-run-name: "CD_UAT - Deploy UAT | CD_DEV run: ${{ github.event.workflow_run.run_number }} | manual build: ${{ inputs.ci_build_number || '(auto)' }} | por: ${{ github.actor }}"
+run-name: "CD_UAT - Deploy UAT | ref CD_DEV: '${{ github.event.workflow_run.display_title }}' | manual build: ${{ inputs.ci_build_number || '(auto)' }} | por: ${{ github.actor }}"
 
 on:
   workflow_run:
