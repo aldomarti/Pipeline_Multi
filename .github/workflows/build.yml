@@ -14,12 +14,12 @@ on:
       proyectos:
         description: 'Selecciona el proyecto a compilar (Build)'
         required: true
-        default: 'myproyecto1'
+        default: "person-connect"
         type: choice
         options:
-          - myproyecto1
-          - myproyecto2
-          - myproyecto3
+          - "person-connect"
+          - "person-login"
+          - "person-process"
 
 env:
     TAGS: 1.0.${{ github.run_number }}
