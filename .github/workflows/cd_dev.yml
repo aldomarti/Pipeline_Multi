@@ -26,9 +26,6 @@ on:
         default: '0'
         type: string
 
-env:
-    AWS_REGION: "us-east-1"
-    AWS_USER: "251763329048"
 jobs:
   Deploy:
     name: Deploy DEV
@@ -64,6 +61,16 @@ jobs:
           echo "TAGS=1.0.$CI_RUN_NUMBER" >> $GITHUB_ENV
           echo "CI_RUN_NUMBER=$CI_RUN_NUMBER" >> $GITHUB_ENV
           echo "Tag a desplegar: 1.0.$CI_RUN_NUMBER"
+
+      - name: Cargar variables de entorno
+        run: |
+          VARS_FILE="./variables/dev/default.yml"
+          echo "---- Cargando variables desde $VARS_FILE ----"
+          echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_USER=$(yq e '.AWS_USER' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_REGION: $(yq e '.AWS_REGION' $VARS_FILE)"
+          echo "AWS_USER:   $(yq e '.AWS_USER' $VARS_FILE)"
+          echo "---------------------------------------------"
 
       - name: Deploy to Lambda DEV
         run: |  
