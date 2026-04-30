@@ -39,7 +39,7 @@ jobs:
 
       - name: proyecto
         run: |
-          echo "Proyecto seleccionado: ${{ inputs.proyectos || 'myproyecto1' }}"
+          echo "Proyecto seleccionado: ${{ inputs.proyectos || 'person-connect' }}"
         
       - name: Carga de variables y Build
         run: |

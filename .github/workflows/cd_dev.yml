@@ -70,7 +70,7 @@ jobs:
           echo "============================================"
           echo " Tag a desplegar: ${{ env.TAGS }}"
           echo "============================================"
-          PROYECTO="${{ inputs.proyectos || 'myproyecto1' }}"
+          PROYECTO="${{ inputs.proyectos || 'person-connect' }}"
 
           # Buscar el proyecto en config.yml por proyectoid
           count=$(yq e '.proyectos | length' ./config.yml)
