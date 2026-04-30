@@ -23,6 +23,8 @@ on:
 
 env:
     TAGS: 1.0.${{ github.run_number }}
+    AWS_REGION: "us-east-1"
+    AWS_USER: "251763329048"
 jobs:
   build:
     name: Build
@@ -57,7 +59,27 @@ jobs:
 
           docker images
 
+      - name: docker login and push to ECR
+        run: |
 
+          # Ejecutar docker login para ECR
+          echo "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_USER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+
+          # Ejecutar docker tag y docker push para cada proyecto
+          count=$(yq e '.proyectos | length' ./config.yml)
+          for i in $(seq 0 $(($count - 1))); do
+            proy=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
+            ecrDEV=$(yq e ".proyectos[$i].ecrRepositoryDEV" ./config.yml)
+
+            local_tag=$proy:${{ env.TAGS }}
+            ecr_uri="${{ env.AWS_USER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrDEV:${{ env.TAGS }}"
+
+            echo "Proyecto: $proy | ECR DEV: $ecrDEV"
+            echo "docker tag $local_tag -> $ecr_uri"
+            echo "docker tag $local_tag $ecr_uri"
+            echo "docker push $ecr_uri"
+            echo "docker push $ecr_uri"
+          done
 
       # - name: Build Docker image 2
       #   run: |
