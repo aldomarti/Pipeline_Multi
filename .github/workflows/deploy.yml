@@ -21,13 +21,14 @@ on:
           - myproyecto2
           - myproyecto3
       ci_build_number:
-        description: 'Build number del pipeline CI (ej: 42)'
-        required: true
+        description: 'Build number del CI (dejar en 0 para tomar el último exitoso automáticamente)'
+        required: false
         default: '0'
         type: string
 
 env:
-    TAGS: 1.0.${{ github.event.workflow_run.run_number || inputs.ci_build_number }}
+    AWS_REGION: "us-east-1"
+    AWS_USER: "251763329048"
 jobs:
   Deploy:
     name: Deploy DEV
@@ -39,6 +40,30 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Obtener Build Number del CI
+        id: build_number
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_run" ]; then
+            # Disparado automáticamente: usar el run_number del CI que lo invocó
+            CI_RUN_NUMBER="${{ github.event.workflow_run.run_number }}"
+            echo "Origen: workflow_run -> run_number: $CI_RUN_NUMBER"
+          elif [ "${{ inputs.ci_build_number }}" != "0" ] && [ -n "${{ inputs.ci_build_number }}" ]; then
+            # Disparado manualmente con build number explícito
+            CI_RUN_NUMBER="${{ inputs.ci_build_number }}"
+            echo "Origen: workflow_dispatch (manual) -> run_number: $CI_RUN_NUMBER"
+          else
+            # Disparado manualmente sin build number: obtener el último run exitoso del CI via API
+            CI_RUN_NUMBER=$(gh api \
+              "repos/${{ github.repository }}/actions/workflows/build.yml/runs?status=success&per_page=1" \
+              --jq '.workflow_runs[0].run_number')
+            echo "Origen: workflow_dispatch (API) -> último run exitoso del CI: $CI_RUN_NUMBER"
+          fi
+          echo "TAGS=1.0.$CI_RUN_NUMBER" >> $GITHUB_ENV
+          echo "CI_RUN_NUMBER=$CI_RUN_NUMBER" >> $GITHUB_ENV
+          echo "Tag a desplegar: 1.0.$CI_RUN_NUMBER"
 
       - name: Deploy to Lambda DEV
         run: |  
