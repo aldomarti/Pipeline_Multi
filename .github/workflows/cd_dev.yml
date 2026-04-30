@@ -1,5 +1,5 @@
 name: CD_DEV
-run-name: "CD-DEV | CI-build: 1.0.${{ github.event.workflow_run.run_number || inputs.ci_build_number || '(auto)' }}"
+run-name: "CD-DEV | CI: 1.0.${{ github.event.workflow_run.run_number || inputs.ci_build_number || '(auto)' }}"
 
 on:
   workflow_run:
