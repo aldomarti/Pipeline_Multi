@@ -1,5 +1,5 @@
 name: CD
-run-name: "CD - Deploy to Lambda 1.0.${{ github.event.workflow_run.run_number || inputs.ci_build_number }}"
+run-name: "CD - Deploy to Lambda | CI-build: ${{ github.event.workflow_run.run_number || inputs.ci_build_number || '(auto)' }} | por: ${{ github.actor }}"
 
 on:
   workflow_run:
@@ -67,7 +67,9 @@ jobs:
 
       - name: Deploy to Lambda DEV
         run: |  
-          echo "Desplegando a Lambda DEV"
+          echo "============================================"
+          echo " Tag a desplegar: ${{ env.TAGS }}"
+          echo "============================================"
           PROYECTO="${{ inputs.proyectos || 'myproyecto1' }}"
 
           # Buscar el proyecto en config.yml por proyectoid
