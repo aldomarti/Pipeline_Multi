@@ -39,66 +39,24 @@ jobs:
         run: |
           echo "Proyecto seleccionado: ${{ inputs.proyectos || 'myproyecto1' }}"
         
-      - name: Carga de variables
+      - name: Carga de variables y Build
         run: |
-          # Stop execution if any command fails
           set -e
 
-          #############
-          #Obtener el archivo config.yml
-          #############
-          config=$(cat ./config.yml)
-          echo "$config"
-          #############
-          #Parametros que se aplican en el despliegue, se obtienen del archivo config.yml
-          #############
-          echo "Obteniendo parametros del deployment"
+          echo "---- Proyectos disponibles en config.yml ----"
+          yq e '.proyectos[].proyectoid' ./config.yml
+          echo "---------------------------------------------"
 
-          # Iterar el array del archivo config.yml y comparar por proyectoid
-          PROYECTO="${{ inputs.proyectos || 'myproyecto1' }}"
-          echo "Mi proyecto: $PROYECTO"
-          encontrado=false
-          count=$(echo "$config" | yq e '.proyectos | length' -)
-          for i in $(seq 0 $(($count - 1))); do
-            pid=$(echo "$config" | yq e ".proyectos[$i].proyectoid" -)
-            if [ "$pid" == "$PROYECTO" ]; then
-              encontrado=true
-              echo "Proyecto encontrado: $pid"
-              ecrRepoDEV=$(echo "$config" | yq e ".proyectos[$i].ecrRepositoryDEV" -)
-              ecrRepoUAT=$(echo "$config" | yq e ".proyectos[$i].ecrRepositoryUAT" -)
-              ecrRepoPRD=$(echo "$config" | yq e ".proyectos[$i].ecrRepositoryPRD" -)
-              LambDEV=$(echo "$config" | yq e ".proyectos[$i].LambdaDEV" -)
-              LambUAT=$(echo "$config" | yq e ".proyectos[$i].LambdaUAT" -)
-              LambPRD=$(echo "$config" | yq e ".proyectos[$i].LambdaPRD" -)
-              break
-            fi
-          done
+          # Iterar cada proyectoid y ejecutar docker buildx build
+          while IFS= read -r proy; do
+            echo "Docker images built: $proy"
+            pathfile=./$proy/Dockerfile
+            tag=$proy:${{ env.TAGS }}
+            docker buildx build --file $pathfile --tag $tag .
+          done < <(yq e '.proyectos[].proyectoid' ./config.yml)
 
-          if [ "$encontrado" == "false" ]; then
-            echo "ERROR: Proyecto '$PROYECTO' no encontrado en config.yml"
-            exit 1
-          fi
-          
-          echo "Mi proyecto: "${{ inputs.proyectos || 'myproyecto1' }}""
-          echo "ECR Repository DEV: $ecrRepoDEV"
-          echo "ECR Repository UAT: $ecrRepoUAT"
-          echo "ECR Repository PRD: $ecrRepoPRD"
-          echo "Lambda DEV: $LambDEV"
-          echo "Lambda UAT: $LambUAT"
-          echo "Lambda PRD: $LambPRD"
+          docker images
 
-      # - name: Set up Docker Buildx
-      #   run: |
-          
-      #     proyect=("myproyecto1" "myproyecto2")
-      #     for proy in "${proyect[@]}"; do
-      #       echo "Docker images built $proy"
-      #       pathfile=./$proy/Dockerfile
-      #       tag=$proy:${{env.TAGS}}
-      #       docker buildx build --file $pathfile --tag $tag .
-      #     done
-
-      #     docker images
 
 
       # - name: Build Docker image 2
