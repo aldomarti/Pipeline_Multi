@@ -1,5 +1,5 @@
 name: CD_UAT
-run-name: "CD - Deploy to Lambda | ref CD_DEV: '${{ github.event.workflow_run.display_title }}'"
+run-name: "CD-UAT | ref: '${{ github.event.workflow_run.display_title }}'"
 
 on:
   workflow_run:
