@@ -1,5 +1,5 @@
 name: CD_DEV
-run-name: "CD - Deploy to Lambda DEV | CI-build: 1.0.${{ github.event.workflow_run.run_number || inputs.ci_build_number || '(auto)' }} | por: ${{ github.actor }}"
+run-name: "CD - Deploy to Lambda | CI-build: 1.0.${{ github.event.workflow_run.run_number || inputs.ci_build_number || '(auto)' }}"
 
 on:
   workflow_run:
