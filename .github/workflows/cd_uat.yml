@@ -65,6 +65,17 @@ jobs:
           echo "CI_RUN_NUMBER=$CI_RUN_NUMBER" >> $GITHUB_ENV
           echo "Tag a desplegar: 1.0.$CI_RUN_NUMBER"
 
+          # Guardar CI_RUN_NUMBER como artefacto para pasar a CD_PRD
+          mkdir -p ./build-info
+          echo "$CI_RUN_NUMBER" > ./build-info/ci_run_number.txt
+
+      - name: Publicar build number como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-info
+          path: ./build-info/ci_run_number.txt
+          retention-days: 1
+
       - name: Cargar variables de entorno
         run: |
           VARS_FILE="./variables/uat/default.yml"
