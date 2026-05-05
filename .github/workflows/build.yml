@@ -1,5 +1,5 @@
 name: CI
-run-name: "CI - Build & Push to ECR 1.0.${{ github.run_number }}"
+run-name: "CI-1.0.${{ github.run_number }}"
 
 on:
   push:
@@ -135,7 +135,11 @@ jobs:
             pythonfilePath=$(yq e ".proyectos[$i].pythonfilePath" ./config.yml)
             s3path=$(yq e ".proyectos[$i].S3path" ./config.yml)
 
+            dest="artifact/$s3path"
             echo "Proyecto: $proy"
             echo "Origen: .$pythonfilePath"
-            echo "Destino artifact: $s3path"
+            echo "Destino artifact: $dest"
+            mkdir -p "$dest"
+            cp -r .$pythonfilePath/. "$dest"
+            echo "Archivos copiados a $dest"
           done
