@@ -147,7 +147,7 @@ jobs:
 
       - name: Package artifact
         run: |
-          echo "Creando el ${{ github.repository }}.zip:"
-          zip -r ${{ github.repository }}.zip artifact/*
-          echo "Contenido del ${{ github.repository }}.zip:"
-          unzip -l ${{ github.repository }}.zip
+          echo "Creando el ${{ github.event.repository.name }}.zip:"
+          zip -r ${{ github.event.repository.name }}.zip artifact/*
+          echo "Contenido del ${{ github.event.repository.name }}.zip:"
+          unzip -l ${{ github.event.repository.name }}.zip
