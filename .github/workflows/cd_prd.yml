@@ -1,5 +1,5 @@
 name: CD_UAT
-run-name: "CD-UAT | ${{ github.event_name == 'workflow_dispatch' && format('proyecto: {0} | build: {1}', inputs.proyectos, inputs.ci_build_number) || format('ref: {0}', github.event.workflow_run.display_title) }}"
+run-name: "CD-UAT | ref: '${{ github.event.workflow_run.display_title }}'"
 
 on:
   workflow_run:
@@ -165,11 +165,9 @@ jobs:
           VARS_FILE="./variables/uat/default.yml"
           echo "---- Cargando variables desde $VARS_FILE ----"
           echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
-          echo "AWS_USER_DOWNLOAD=$(yq e '.AWS_USER_DOWNLOAD' $VARS_FILE)" >> $GITHUB_ENV
-          echo "AWS_USER_UPLOAD=$(yq e '.AWS_USER_UPLOAD' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_USER=$(yq e '.AWS_USER' $VARS_FILE)" >> $GITHUB_ENV
           echo "AWS_REGION: $(yq e '.AWS_REGION' $VARS_FILE)"
-          echo "AWS_USER_DOWNLOAD:   $(yq e '.AWS_USER_DOWNLOAD' $VARS_FILE)"
-          echo "AWS_USER_UPLOAD:   $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
+          echo "AWS_USER:   $(yq e '.AWS_USER' $VARS_FILE)"
           echo "---------------------------------------------"
 
       - name: Deploy to Lambda UAT
@@ -204,4 +202,4 @@ jobs:
           echo "LambdaUAT:        $LambdaUAT"
           echo "----------------------------"
 
-          echo "aws lambda update-function-code --function-name $LambdaUAT --image-uri ${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrRepositoryUAT:${{ env.TAGS }}"
+          echo "aws lambda update-function-code --function-name $LambdaUAT --image-uri ${{ env.AWS_USER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrRepositoryUAT:${{ env.TAGS }}"

@@ -40,9 +40,9 @@ jobs:
           VARS_FILE="./variables/build/default.yml"
           echo "---- Cargando variables desde $VARS_FILE ----"
           echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
-          echo "AWS_USER=$(yq e '.AWS_USER' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_USER_UPLOAD=$(yq e '.AWS_USER_UPLOAD' $VARS_FILE)" >> $GITHUB_ENV
           echo "AWS_REGION: $(yq e '.AWS_REGION' $VARS_FILE)"
-          echo "AWS_USER:   $(yq e '.AWS_USER' $VARS_FILE)"
+          echo "AWS_USER_UPLOAD:   $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
           echo "---------------------------------------------"
       - name: proyecto
         run: |
@@ -73,7 +73,7 @@ jobs:
         run: |
 
           # Ejecutar docker login para ECR
-          echo "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_USER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+          echo "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
 
           # Ejecutar docker tag y docker push para cada proyecto
           count=$(yq e '.proyectos | length' ./config.yml)
@@ -82,7 +82,7 @@ jobs:
             ecrDEV=$(yq e ".proyectos[$i].ecrRepositoryDEV" ./config.yml)
 
             local_tag=$proy:${{ env.TAGS }}
-            ecr_uri="${{ env.AWS_USER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrDEV:${{ env.TAGS }}"
+            ecr_uri="${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrDEV:${{ env.TAGS }}"
 
             echo "Proyecto: $proy | ECR DEV: $ecrDEV"
             echo "docker tag $local_tag -> $ecr_uri"
@@ -90,45 +90,3 @@ jobs:
             echo "docker push $ecr_uri"
             echo "docker push $ecr_uri"
           done
-  # Deploy:
-  #   name: Deploy DEV
-  #   runs-on: ubuntu-latest
-  #   needs: build
-  #   permissions:
-  #     contents: read
-  #     id-token: write  # Required for OIDC authentication
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-
-  #     - name: Deploy to Lambda DEV
-  #       run: |  
-  #         echo "Desplegando a Lambda DEV"
-  #         PROYECTO="${{ inputs.proyectos || 'myproyecto1' }}"
-
-  #         # Buscar el proyecto en config.yml por proyectoid
-  #         count=$(yq e '.proyectos | length' ./config.yml)
-  #         encontrado=false
-  #         for i in $(seq 0 $(($count - 1))); do
-  #           pid=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
-  #           if [ "$pid" == "$PROYECTO" ]; then
-  #             encontrado=true
-  #             proyectoid=$pid
-  #             ecrRepositoryDEV=$(yq e ".proyectos[$i].ecrRepositoryDEV" ./config.yml)
-  #             LambdaDEV=$(yq e ".proyectos[$i].LambdaDEV" ./config.yml)
-  #             break
-  #           fi
-  #         done
-
-  #         if [ "$encontrado" == "false" ]; then
-  #           echo "ERROR: Proyecto '$PROYECTO' no encontrado en config.yml"
-  #           exit 1
-  #         fi
-
-  #         echo "---- Variables cargadas ----"
-  #         echo "proyectoid:       $proyectoid"
-  #         echo "ecrRepositoryDEV: $ecrRepositoryDEV"
-  #         echo "LambdaDEV:        $LambdaDEV"
-  #         echo "----------------------------"
-
-  #         echo "aws lambda update-function-code --function-name $LambdaDEV --image-uri ${{ env.AWS_USER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrRepositoryDEV:${{ env.TAGS }}"
