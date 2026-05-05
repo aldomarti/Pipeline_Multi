@@ -135,7 +135,7 @@ jobs:
             pythonfilePath=$(yq e ".proyectos[$i].pythonfilePath" ./config.yml)
             s3path=$(yq e ".proyectos[$i].S3path" ./config.yml)
 
-            dest="artifact/$s3path"
+            dest="${{ github.event.repository.name }}/$s3path"
             echo "Proyecto: $proy"
             echo "Origen: .$pythonfilePath"
             echo "Destino artifact: $dest"
@@ -147,10 +147,6 @@ jobs:
 
       - name: Package artifact
         run: |
-          REPO_NAME="${{ github.event.repository.name }}"
-          echo "Renombrando artifact/ a $REPO_NAME/"
-          mv artifact "$REPO_NAME"
-          echo "Creando el $REPO_NAME.zip:"
-          cd "$REPO_NAME" && zip -r "../$REPO_NAME.zip" . && cd ..
-          echo "Contenido del $REPO_NAME.zip:"
-          unzip -l "$REPO_NAME.zip"
+          zip -r ${{ github.event.repository.name }}.zip ${{ github.event.repository.name }}/*
+          echo "Contenido del ${{ github.event.repository.name }}.zip:"
+          unzip -l ${{ github.event.repository.name }}.zip
