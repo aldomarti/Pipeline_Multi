@@ -24,8 +24,8 @@ on:
 env:
     TAGS: 1.0.${{ github.run_number }}
 jobs:
-  build:
-    name: Build
+  lambdaBuild:
+    name: Build docker
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -94,4 +94,48 @@ jobs:
             echo "docker tag $local_tag $ecr_uri"
             echo "docker push $ecr_uri"
             echo "docker push $ecr_uri"
+          done
+  S3Build:
+    name: Build S3
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC authentication
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cargar variables de entorno
+        run: |
+          VARS_FILE="./variables/build/default.yml"
+          echo "---- Cargando variables desde $VARS_FILE ----"
+          echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_USER_UPLOAD=$(yq e '.AWS_USER_UPLOAD' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_REGION: $(yq e '.AWS_REGION' $VARS_FILE)"
+          echo "AWS_USER_UPLOAD:   $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
+          echo "---------------------------------------------"
+
+      - name: Copiar archivos a artifact
+        run: |
+          set -e
+
+          echo "---- Proyectos con deploy: s3 en config.yml ----"
+          yq e '.proyectos[] | select(.deploy == "s3") | .proyectoid' ./config.yml
+          echo "---------------------------------------------"
+
+          # Iterar solo proyectos con deploy: s3
+          count=$(yq e '.proyectos | length' ./config.yml)
+          for i in $(seq 0 $(($count - 1))); do
+            deploy=$(yq e ".proyectos[$i].deploy" ./config.yml)
+            if [ "$deploy" != "s3" ]; then
+              continue
+            fi
+            proy=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
+            pythonfilePath=$(yq e ".proyectos[$i].pythonfilePath" ./config.yml)
+            s3path=$(yq e ".proyectos[$i].S3path" ./config.yml)
+
+            echo "Proyecto: $proy"
+            echo "Origen: .$pythonfilePath"
+            echo "Destino artifact: $s3path"
           done
