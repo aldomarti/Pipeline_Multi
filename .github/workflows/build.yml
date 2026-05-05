@@ -144,3 +144,10 @@ jobs:
             echo "Archivos copiados a $dest:"
             find "$dest" -type f | sort
           done
+
+      - name: Package artifact
+        run: |
+          echo "Creando el ${{ github.repository }}.zip:"
+          zip -r ${{ github.repository }}.zip artifact/*
+          echo "Contenido del ${{ github.repository }}.zip:"
+          unzip -l ${{ github.repository }}.zip
