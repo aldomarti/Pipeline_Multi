@@ -1,10 +1,10 @@
-name: CD_UAT
-run-name: "CD-UAT | ref: '${{ github.event.workflow_run.display_title }}'"
+name: CD_PRD
+run-name: "CD-PRD | ref: '${{ github.event.workflow_run.display_title }}'"
 
 on:
   workflow_run:
     workflows:
-      - "CD_DEV"
+      - "CD_UAT"
     types:
       - completed
     branches:
@@ -38,28 +38,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Obtener Build Number del CD_DEV
+      - name: Obtener Build Number del CD_UAT
         id: build_number
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${{ github.event_name }}" == "workflow_run" ]; then
-            # Descargar artefacto build-info del run de CD_DEV que disparó este workflow
+            # Descargar artefacto build-info del run de CD_UAT que disparó este workflow
             RUN_ID="${{ github.event.workflow_run.id }}"
             echo "Descargando artefacto build-info del run ID: $RUN_ID"
             gh run download $RUN_ID --name build-info --dir ./build-info
             CI_RUN_NUMBER=$(cat ./build-info/ci_run_number.txt)
-            echo "Origen: artefacto CD_DEV -> CI_RUN_NUMBER: $CI_RUN_NUMBER"
+            echo "Origen: artefacto CD_UAT -> CI_RUN_NUMBER: $CI_RUN_NUMBER"
           elif [ "${{ inputs.ci_build_number }}" != "0" ] && [ -n "${{ inputs.ci_build_number }}" ]; then
             # Disparado manualmente con build number explícito
             CI_RUN_NUMBER="${{ inputs.ci_build_number }}"
             echo "Origen: workflow_dispatch (manual) -> run_number: $CI_RUN_NUMBER"
           else
-            # Disparado manualmente sin build number: obtener el último run exitoso del CD_DEV via API
+            # Disparado manualmente sin build number: obtener el último run exitoso del CD_UAT via API
             CI_RUN_NUMBER=$(gh api \
-              "repos/${{ github.repository }}/actions/workflows/cd_dev.yml/runs?status=success&per_page=1" \
+              "repos/${{ github.repository }}/actions/workflows/cd_uat.yml/runs?status=success&per_page=1" \
               --jq '.workflow_runs[0].run_number')
-            echo "Origen: workflow_dispatch (API) -> último run exitoso del CD_DEV: $CI_RUN_NUMBER"
+            echo "Origen: workflow_dispatch (API) -> último run exitoso del CD_UAT: $CI_RUN_NUMBER"
           fi
           echo "TAGS=1.0.$CI_RUN_NUMBER" >> $GITHUB_ENV
           echo "CI_RUN_NUMBER=$CI_RUN_NUMBER" >> $GITHUB_ENV
@@ -67,7 +67,7 @@ jobs:
 
       - name: Cargar variables de entorno
         run: |
-          VARS_FILE="./variables/uat/default.yml"
+          VARS_FILE="./variables/prd/default.yml"
           echo "---- Cargando variables desde $VARS_FILE ----"
           echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
           echo "AWS_USER_DOWNLOAD=$(yq e '.AWS_USER_DOWNLOAD' $VARS_FILE)" >> $GITHUB_ENV
@@ -77,10 +77,10 @@ jobs:
           echo "AWS_USER_UPLOAD:   $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
           echo "---------------------------------------------"
 
-      - name: Promover imagen a ECR UAT
+      - name: Promover imagen a ECR PRD
         run: |
           echo "============================================"
-          echo " Promoviendo imagenes DEV -> UAT"
+          echo " Promoviendo imagenes UAT -> PRD"
           echo " Tag: ${{ env.TAGS }}"
           echo "============================================"
 
@@ -89,32 +89,34 @@ jobs:
           echo "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_USER_DOWNLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
 
           echo "---- Proyectos a promover ----"
-          yq e '.proyectos[] | .proyectoid + " | DEV: " + .ecrRepositoryDEV + " | UAT: " + .ecrRepositoryUAT' ./config.yml
+          yq e '.proyectos[] | .proyectoid + " | UAT: " + .ecrRepositoryUAT + " | PRD: " + .ecrRepositoryPRD' ./config.yml
           echo "------------------------------"
 
-          # Iterar cada proyecto y promover imagen de DEV a UAT
+          # Iterar cada proyecto y promover imagen de UAT a PRD
           count=$(yq e '.proyectos | length' ./config.yml)
           for i in $(seq 0 $(($count - 1))); do
             proyectoid=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
-            ecrDEV=$(yq e ".proyectos[$i].ecrRepositoryDEV" ./config.yml)
+            ecrPRD=$(yq e ".proyectos[$i].ecrRepositoryPRD" ./config.yml)
             ecrUAT=$(yq e ".proyectos[$i].ecrRepositoryUAT" ./config.yml)
 
-            uri_dev="${{ env.AWS_USER_DOWNLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrDEV:${{ env.TAGS }}"
-            uri_uat="${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrUAT:${{ env.TAGS }}"
+            uri_uat="${{ env.AWS_USER_DOWNLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrUAT:${{ env.TAGS }}"
+            uri_prd="${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrPRD:${{ env.TAGS }}"
 
             echo "--- $proyectoid ---"
-            echo "Pull DEV: $uri_dev"
-            echo "docker pull $uri_dev"
+            echo "Pull UAT: $uri_uat"
+            echo "docker pull $uri_uat"
 
           #######################################
-          ### aqui tiene que ir el login a UAT
+          ### aqui tiene que ir el login a PRD
           #######################################
+          echo "Login a PRD"
+          echo "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
           
             echo "Tag UAT:  $uri_uat"
-            echo "docker tag $uri_dev $uri_uat"
+            echo "docker tag $uri_uat $uri_prd"
 
-            echo "Push UAT: $uri_uat"
-            echo "docker push $uri_uat"
+            echo "Push PRD: $uri_prd"
+            echo "docker push $uri_prd"
           done
           echo "============================================"
           echo " Promocion completada"
@@ -122,7 +124,7 @@ jobs:
 
 
   Deploy:
-    name: Deploy UAT
+    name: Deploy PRD
     needs: Promover
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
@@ -133,28 +135,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Obtener Build Number del CD_DEV
+      - name: Obtener Build Number del CD_UAT
         id: build_number
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${{ github.event_name }}" == "workflow_run" ]; then
-            # Descargar artefacto build-info del run de CD_DEV que disparó este workflow
+            # Descargar artefacto build-info del run de CD_UAT que disparó este workflow
             RUN_ID="${{ github.event.workflow_run.id }}"
             echo "Descargando artefacto build-info del run ID: $RUN_ID"
             gh run download $RUN_ID --name build-info --dir ./build-info
             CI_RUN_NUMBER=$(cat ./build-info/ci_run_number.txt)
-            echo "Origen: artefacto CD_DEV -> CI_RUN_NUMBER: $CI_RUN_NUMBER"
+            echo "Origen: artefacto CD_UAT -> CI_RUN_NUMBER: $CI_RUN_NUMBER"
           elif [ "${{ inputs.ci_build_number }}" != "0" ] && [ -n "${{ inputs.ci_build_number }}" ]; then
             # Disparado manualmente con build number explícito
             CI_RUN_NUMBER="${{ inputs.ci_build_number }}"
             echo "Origen: workflow_dispatch (manual) -> run_number: $CI_RUN_NUMBER"
           else
-            # Disparado manualmente sin build number: obtener el último run exitoso del CD_DEV via API
+            # Disparado manualmente sin build number: obtener el último run exitoso del CD_UAT via API
             CI_RUN_NUMBER=$(gh api \
-              "repos/${{ github.repository }}/actions/workflows/cd_dev.yml/runs?status=success&per_page=1" \
+              "repos/${{ github.repository }}/actions/workflows/cd_uat.yml/runs?status=success&per_page=1" \
               --jq '.workflow_runs[0].run_number')
-            echo "Origen: workflow_dispatch (API) -> último run exitoso del CD_DEV: $CI_RUN_NUMBER"
+            echo "Origen: workflow_dispatch (API) -> último run exitoso del CD_UAT: $CI_RUN_NUMBER"
           fi
           echo "TAGS=1.0.$CI_RUN_NUMBER" >> $GITHUB_ENV
           echo "CI_RUN_NUMBER=$CI_RUN_NUMBER" >> $GITHUB_ENV
@@ -162,15 +164,17 @@ jobs:
 
       - name: Cargar variables de entorno
         run: |
-          VARS_FILE="./variables/uat/default.yml"
+          VARS_FILE="./variables/prd/default.yml"
           echo "---- Cargando variables desde $VARS_FILE ----"
           echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
-          echo "AWS_USER=$(yq e '.AWS_USER' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_USER_DOWNLOAD=$(yq e '.AWS_USER_DOWNLOAD' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_USER_UPLOAD=$(yq e '.AWS_USER_UPLOAD' $VARS_FILE)" >> $GITHUB_ENV
           echo "AWS_REGION: $(yq e '.AWS_REGION' $VARS_FILE)"
-          echo "AWS_USER:   $(yq e '.AWS_USER' $VARS_FILE)"
+          echo "AWS_USER_DOWNLOAD:   $(yq e '.AWS_USER_DOWNLOAD' $VARS_FILE)"
+          echo "AWS_USER_UPLOAD:   $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
           echo "---------------------------------------------"
 
-      - name: Deploy to Lambda UAT
+      - name: Deploy to Lambda PRD
         run: |  
           echo "============================================"
           echo " Tag a desplegar: ${{ env.TAGS }}"
@@ -185,8 +189,8 @@ jobs:
             if [ "$pid" == "$PROYECTO" ]; then
               encontrado=true
               proyectoid=$pid
-              ecrRepositoryUAT=$(yq e ".proyectos[$i].ecrRepositoryUAT" ./config.yml)
-              LambdaUAT=$(yq e ".proyectos[$i].LambdaUAT" ./config.yml)
+              ecrRepositoryPRD=$(yq e ".proyectos[$i].ecrRepositoryPRD" ./config.yml)
+              LambdaPRD=$(yq e ".proyectos[$i].LambdaPRD" ./config.yml)
               break
             fi
           done
@@ -198,8 +202,8 @@ jobs:
 
           echo "---- Variables cargadas ----"
           echo "proyectoid:       $proyectoid"
-          echo "ecrRepositoryUAT: $ecrRepositoryUAT"
-          echo "LambdaUAT:        $LambdaUAT"
+          echo "ecrRepositoryPRD: $ecrRepositoryPRD"
+          echo "LambdaPRD:        $LambdaPRD"
           echo "----------------------------"
 
-          echo "aws lambda update-function-code --function-name $LambdaUAT --image-uri ${{ env.AWS_USER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrRepositoryUAT:${{ env.TAGS }}"
+          echo "aws lambda update-function-code --function-name $LambdaPRD --image-uri ${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrRepositoryPRD:${{ env.TAGS }}"
