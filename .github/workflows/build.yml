@@ -141,5 +141,6 @@ jobs:
             echo "Destino artifact: $dest"
             mkdir -p "$dest"
             cp -r .$pythonfilePath/. "$dest"
-            echo "Archivos copiados a $dest"
+            echo "Archivos copiados a $dest:"
+            find "$dest" -type f | sort
           done
