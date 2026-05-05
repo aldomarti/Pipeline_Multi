@@ -4,22 +4,22 @@ run-name: "CI - Build & Push to ECR 1.0.${{ github.run_number }}"
 on:
   push:
     branches:
-       - main
+       - v1
 #       - develop
 #   pull_request:
 #     branches:
 #       - main
   workflow_dispatch:
-    inputs:
-      proyectos:
-        description: 'Selecciona el proyecto a compilar (Build)'
-        required: true
-        default: "person-connect"
-        type: choice
-        options:
-          - "person-connect"
-          - "person-login"
-          - "person-process"
+    # inputs:
+    #   proyectos:
+    #     description: 'Selecciona el proyecto a compilar (Build)'
+    #     required: true
+    #     default: "person-connect"
+    #     type: choice
+    #     options:
+    #       - "person-connect"
+    #       - "person-login"
+    #       - "person-process"
 
 env:
     TAGS: 1.0.${{ github.run_number }}
@@ -44,21 +44,22 @@ jobs:
           echo "AWS_REGION: $(yq e '.AWS_REGION' $VARS_FILE)"
           echo "AWS_USER_UPLOAD:   $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
           echo "---------------------------------------------"
-      - name: proyecto
-        run: |
-          echo "Proyecto seleccionado: ${{ inputs.proyectos || 'person-connect' }}"
-        
+
       - name: Docker Build
         run: |
           set -e
 
-          echo "---- Proyectos disponibles en config.yml ----"
-          yq e '.proyectos[].proyectoid' ./config.yml
+          echo "---- Proyectos con deploy: lambda en config.yml ----"
+          yq e '.proyectos[] | select(.deploy == "lambda") | .proyectoid' ./config.yml
           echo "---------------------------------------------"
 
-          # Iterar cada proyecto y ejecutar docker buildx build
+          # Iterar solo proyectos con deploy: lambda y ejecutar docker buildx build
           count=$(yq e '.proyectos | length' ./config.yml)
           for i in $(seq 0 $(($count - 1))); do
+            deploy=$(yq e ".proyectos[$i].deploy" ./config.yml)
+            if [ "$deploy" != "lambda" ]; then
+              continue
+            fi
             proy=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
             pathfile=$(yq e ".proyectos[$i].dockerfilePath" ./config.yml)
             tag=$proy:${{ env.TAGS }}
@@ -75,9 +76,13 @@ jobs:
           # Ejecutar docker login para ECR
           echo "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
 
-          # Ejecutar docker tag y docker push para cada proyecto
+          # Ejecutar docker tag y docker push solo para proyectos con deploy: lambda
           count=$(yq e '.proyectos | length' ./config.yml)
           for i in $(seq 0 $(($count - 1))); do
+            deploy=$(yq e ".proyectos[$i].deploy" ./config.yml)
+            if [ "$deploy" != "lambda" ]; then
+              continue
+            fi
             proy=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
             ecrDEV=$(yq e ".proyectos[$i].ecrRepositoryDEV" ./config.yml)
 

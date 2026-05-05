@@ -8,7 +8,7 @@ on:
     types:
       - completed
     branches:
-      - main
+      - v1
   workflow_dispatch:
     inputs:
       proyectos:
@@ -20,6 +20,10 @@ on:
           - "person-connect"
           - "person-login"
           - "person-process"
+          - "castillo-connect"
+          - "castillo-login"
+          - "balcazar-process"
+          
       ci_build_number:
         description: 'Build number del CI (dejar en 0 para tomar el último exitoso automáticamente)'
         required: false
