@@ -1,4 +1,4 @@
-name: CI
+name: build
 run-name: "CI-1.0.${{ github.run_number }}"
 
 on:
