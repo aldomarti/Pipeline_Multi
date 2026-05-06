@@ -162,9 +162,18 @@ jobs:
 
       - name: Package artifact
         run: |
-          zip -r ${{ github.event.repository.name }}_${{ env.VERSION }}.zip ${{ github.event.repository.name }}_${{ env.VERSION }}/*
-          echo "Contenido del ${{ github.event.repository.name }}_${{ env.VERSION }}.zip:"
-          unzip -l ${{ github.event.repository.name }}_${{ env.VERSION }}.zip
+          BASE_DIR="${{ github.event.repository.name }}_${{ env.VERSION }}"
+          ZIP_NAME="${BASE_DIR}.zip"
+
+          echo "---- Carpetas encontradas en $BASE_DIR ----"
+          find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d | sort
+
+          cd "$BASE_DIR"
+          zip -r "../$ZIP_NAME" */
+          cd ..
+
+          echo "Contenido de $ZIP_NAME:"
+          unzip -l "$ZIP_NAME"
 
       - name: Publicar artefacto
         uses: actions/upload-artifact@v4
