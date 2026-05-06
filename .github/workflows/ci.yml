@@ -160,15 +160,15 @@ jobs:
             find "$dest" -type f | sort
           done
 
-      # - name: Package artifact
-      #   run: |
-      #     zip -r ${{ github.event.repository.name }}.zip ${{ github.event.repository.name }}/*
-      #     echo "Contenido del ${{ github.event.repository.name }}.zip:"
-      #     unzip -l ${{ github.event.repository.name }}.zip
+      - name: Package artifact
+        run: |
+          zip -r ${{ github.event.repository.name }}_${{ env.VERSION }}.zip ${{ github.event.repository.name }}_${{ env.VERSION }}/*
+          echo "Contenido del ${{ github.event.repository.name }}_${{ env.VERSION }}.zip:"
+          unzip -l ${{ github.event.repository.name }}_${{ env.VERSION }}.zip
 
       - name: Publicar artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}
-          path: ${{ github.event.repository.name }}_${{ env.VERSION }}
+          name: ${{ github.event.repository.name }}_${{ env.VERSION }}
+          path: ${{ github.event.repository.name }}_${{ env.VERSION }}.zip
           retention-days: 1
