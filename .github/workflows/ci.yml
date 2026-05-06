@@ -25,7 +25,9 @@ env:
     TAGS: 1.0.${{ github.run_number }}
 jobs:
   lambdaBuild:
-    name: Build docker
+    name: build compile docker
+    needs: S3Build
+    if: needs.S3Build.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -95,8 +97,21 @@ jobs:
             echo "docker push $ecr_uri"
             echo "docker push $ecr_uri"
           done
+
+      - name: Descargar artefacto S3Build
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}
+          path: .
+
+      - name: listar zip descargado
+        run: |
+          echo "Contenido del directorio actual:"
+          find . -type f | sort
+          echo "Contenido del ${{ github.event.repository.name }}.zip:"
+          unzip -l ${{ github.event.repository.name }}.zip
   S3Build:
-    name: Build S3
+    name: build compile s3
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -150,3 +165,10 @@ jobs:
           zip -r ${{ github.event.repository.name }}.zip ${{ github.event.repository.name }}/*
           echo "Contenido del ${{ github.event.repository.name }}.zip:"
           unzip -l ${{ github.event.repository.name }}.zip
+
+      - name: Publicar artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}
+          path: ${{ github.event.repository.name }}.zip
+          retention-days: 1
