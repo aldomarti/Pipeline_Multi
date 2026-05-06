@@ -118,10 +118,10 @@ jobs:
               echo ">> Artefacto '$ZIP_FILE' ya existe. Se omite la descarga."
             else
               echo ">> Descargando artefacto desde Artifactory..."
-              curl -fSL \
-                -H "Authorization: Bearer ${{ secrets.ARTIFACTORY_TOKEN }}" \
-                -o "$ZIP_FILE" \
-                "$artifactoryUrl"
+                echo "curl -fSL \
+                echo "  -H "Authorization: Bearer ${{ secrets.ARTIFACTORY_TOKEN }}" \
+                echo "  -o "$ZIP_FILE" \
+                echo "  "$artifactoryUrl"
               echo ">> Descarga completada: $ZIP_FILE"
               ls -lh "$ZIP_FILE"
             fi
