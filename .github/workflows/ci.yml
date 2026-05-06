@@ -104,12 +104,14 @@ jobs:
           name: ${{ github.event.repository.name }}_${{ env.VERSION }}
           path: .
 
-      # - name: listar zip descargado
-      #   run: |
-      #     echo "Contenido del directorio actual:"
-      #     find . -type f | sort
-      #     echo "Contenido del ${{ github.event.repository.name }}_${{ env.VERSION }}.zip:"
-      #     unzip -l ${{ github.event.repository.name }}_${{ env.VERSION }}.zip
+      - name: Descomprimir artefacto S3Build
+        run: |
+          ZIP_NAME="${{ github.event.repository.name }}_${{ env.VERSION }}.zip"
+          echo ">> Descomprimiendo $ZIP_NAME..."
+          unzip -o "$ZIP_NAME" -d "${{ github.event.repository.name }}_${{ env.VERSION }}"
+          echo ">> Contenido descomprimido:"
+          find "${{ github.event.repository.name }}_${{ env.VERSION }}" -type f | sort
+
   S3Build:
     name: build compile s3
     runs-on: ubuntu-latest
@@ -159,21 +161,6 @@ jobs:
             echo "Archivos copiados a $dest:"
             find "$dest" -type f | sort
           done
-
-      # - name: Package artifact
-      #   run: |
-      #     BASE_DIR="${{ github.event.repository.name }}_${{ env.VERSION }}"
-      #     ZIP_NAME="${BASE_DIR}.zip"
-
-      #     echo "---- Carpetas encontradas en $BASE_DIR ----"
-      #     find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d | sort
-
-      #     cd "$BASE_DIR"
-      #     zip -r "../$ZIP_NAME" */
-      #     cd ..
-
-      #     echo "Contenido de $ZIP_NAME:"
-      #     unzip -l "$ZIP_NAME"
 
       - name: Publicar artefacto
         uses: actions/upload-artifact@v4
