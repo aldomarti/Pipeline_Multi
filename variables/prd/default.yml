@@ -1,3 +1,4 @@
 AWS_REGION: "us-east-1"
 AWS_USER_DOWNLOAD: "251763329045"
 AWS_USER_UPLOAD: "251763329046"
+ARTIFACTORY_URL: "https://artifacts.mycompany.com/artifactory"

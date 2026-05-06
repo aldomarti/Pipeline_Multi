@@ -80,9 +80,54 @@ jobs:
           echo "---- Cargando variables desde $VARS_FILE ----"
           echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
           echo "AWS_USER_UPLOAD=$(yq e '.AWS_USER_UPLOAD' $VARS_FILE)" >> $GITHUB_ENV
-          echo "AWS_REGION: $(yq e '.AWS_REGION' $VARS_FILE)"
-          echo "AWS_USER_UPLOAD:   $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
+          echo "ARTIFACTORY_URL=$(yq e '.ARTIFACTORY_URL' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_REGION:      $(yq e '.AWS_REGION' $VARS_FILE)"
+          echo "AWS_USER_UPLOAD: $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
+          echo "ARTIFACTORY_URL: $(yq e '.ARTIFACTORY_URL' $VARS_FILE)"
           echo "---------------------------------------------"
+
+      - name: Descargar artefacto desde Artifactory
+        run: |
+          PROYECTO="${{ inputs.proyectos }}"
+
+          # Buscar proyectoid y leer deploy type
+          count=$(yq e '.proyectos | length' ./config.yml)
+          encontrado=false
+          for i in $(seq 0 $(($count - 1))); do
+            pid=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
+            if [ "$pid" == "$PROYECTO" ]; then
+              encontrado=true
+              deploy_type=$(yq e ".proyectos[$i].deploy" ./config.yml)
+              break
+            fi
+          done
+
+          if [ "$encontrado" == "false" ]; then
+            echo "::error::Proyecto '$PROYECTO' no encontrado en config.yml"
+            exit 1
+          fi
+
+          if [ "$deploy_type" == "s3" ]; then
+            ZIP_FILE="${{ github.event.repository.name }}.zip"
+            artifactoryUrl="${{ env.ARTIFACTORY_URL }}/dso-generic-snapshot/$ZIP_FILE"
+
+            echo "URL Artifactory: $artifactoryUrl"
+            echo "Archivo zip:     $ZIP_FILE"
+
+            if [ -f "$ZIP_FILE" ]; then
+              echo ">> Artefacto '$ZIP_FILE' ya existe. Se omite la descarga."
+            else
+              echo ">> Descargando artefacto desde Artifactory..."
+              curl -fSL \
+                -H "Authorization: Bearer ${{ secrets.ARTIFACTORY_TOKEN }}" \
+                -o "$ZIP_FILE" \
+                "$artifactoryUrl"
+              echo ">> Descarga completada: $ZIP_FILE"
+              ls -lh "$ZIP_FILE"
+            fi
+          else
+            echo ">> Proyecto '$PROYECTO' tiene deploy tipo '$deploy_type'. No requiere descarga desde Artifactory."
+          fi
 
       - name: Deploy
         run: |
