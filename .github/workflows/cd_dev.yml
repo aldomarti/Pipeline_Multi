@@ -124,6 +124,12 @@ jobs:
               #   "$artifactoryUrl"
               echo ">> Descarga completada: $ZIP_FILE"
               #ls -lh "$ZIP_FILE"
+
+              echo ">> Descomprimiendo $ZIP_FILE en $GITHUB_WORKSPACE..."
+              #unzip -o "$ZIP_FILE" -d "$GITHUB_WORKSPACE"
+              echo ">> Contenido descomprimido:"
+              #find "$GITHUB_WORKSPACE/${{ github.event.repository.name }}" -type f | sort
+
             fi
           else
             echo ">> Proyecto '$PROYECTO' tiene deploy tipo '$deploy_type'. No requiere descarga desde Artifactory."
