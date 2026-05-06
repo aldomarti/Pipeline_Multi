@@ -16,30 +16,18 @@ on:
         required: true
         type: string
         default: "1.0.0"
-      person-connect:
-        description: "[Lambda] person-connect"
-        type: boolean
-        default: false
-      person-login:
-        description: "[Lambda] person-login"
-        type: boolean
-        default: false
-      person-process:
-        description: "[Lambda] person-process"
-        type: boolean
-        default: false
-      castillo-connect:
-        description: "[S3] castillo-connect"
-        type: boolean
-        default: false
-      castillo-login:
-        description: "[S3] castillo-login"
-        type: boolean
-        default: false
-      balcazar-process:
-        description: "[S3] balcazar-process"
-        type: boolean
-        default: false
+      proyectos:
+        description: 'Selecciona el proyecto a desplegar'
+        required: true
+        default: "person-connect"
+        type: choice
+        options:
+          - "person-connect"
+          - "person-login"
+          - "person-process"
+          - "castillo-connect"
+          - "castillo-login"
+          - "balcazar-process"
 
 env:
   VERSION: ${{ github.event.inputs.version }}
@@ -96,102 +84,59 @@ jobs:
           echo "AWS_USER_UPLOAD:   $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
           echo "---------------------------------------------"
 
-      - name: Proyectos seleccionados
-        env:
-          INPUT_PERSON_CONNECT: ${{ inputs.person-connect }}
-          INPUT_PERSON_LOGIN: ${{ inputs.person-login }}
-          INPUT_PERSON_PROCESS: ${{ inputs.person-process }}
-          INPUT_CASTILLO_CONNECT: ${{ inputs.castillo-connect }}
-          INPUT_CASTILLO_LOGIN: ${{ inputs.castillo-login }}
-          INPUT_BALCAZAR_PROCESS: ${{ inputs.balcazar-process }}
+      - name: Deploy
         run: |
           echo "============================================"
-          echo " Proyectos habilitados para despliegue"
+          echo " Tag a desplegar: ${{ env.VERSION }}"
           echo "============================================"
+
+          PROYECTO="${{ inputs.proyectos }}"
+          echo "Proyecto seleccionado: $PROYECTO"
+
+          # Buscar proyectoid en config.yml
           count=$(yq e '.proyectos | length' ./config.yml)
-          found=false
+          encontrado=false
           for i in $(seq 0 $(($count - 1))); do
             pid=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
-            deploy_type=$(yq e ".proyectos[$i].deploy" ./config.yml)
-            env_var="INPUT_$(echo "$pid" | tr '[:lower:]-' '[:upper:]_')"
-            valor="${!env_var}"
-            if [ "$valor" == "true" ]; then
-              echo "  [x] $pid  (deploy: $deploy_type)"
-              found=true
-            else
-              echo "  [ ] $pid"
+            if [ "$pid" == "$PROYECTO" ]; then
+              encontrado=true
+              deploy_type=$(yq e ".proyectos[$i].deploy" ./config.yml)
+              break
             fi
           done
-          echo "============================================"
-          if [ "$found" == "false" ]; then
-            echo "ADVERTENCIA: Ningún proyecto seleccionado."
+
+          if [ "$encontrado" == "false" ]; then
+            echo "::error::Proyecto '$PROYECTO' no encontrado en config.yml"
+            exit 1
           fi
 
-      # - name: Deploy
-      #   env:
-      #     INPUT_PERSON_CONNECT: ${{ inputs.person-connect }}
-      #     INPUT_PERSON_LOGIN: ${{ inputs.person-login }}
-      #     INPUT_PERSON_PROCESS: ${{ inputs.person-process }}
-      #     INPUT_CASTILLO_CONNECT: ${{ inputs.castillo-connect }}
-      #     INPUT_CASTILLO_LOGIN: ${{ inputs.castillo-login }}
-      #     INPUT_BALCAZAR_PROCESS: ${{ inputs.balcazar-process }}
-      #   run: |
-      #     echo "============================================"
-      #     echo " Tag a desplegar: ${{ env.VERSION }}"
-      #     echo "============================================"
+          echo "deploy_type: $deploy_type"
 
-      #     # Construir lista "proyectoid:deploy_type" leyendo config.yml
-      #     LISTA=""
-      #     count=$(yq e '.proyectos | length' ./config.yml)
-      #     for i in $(seq 0 $(($count - 1))); do
-      #       pid=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
-      #       deploy_type=$(yq e ".proyectos[$i].deploy" ./config.yml)
-      #       env_var="INPUT_$(echo "$pid" | tr '[:lower:]-' '[:upper:]_')"
-      #       valor="${!env_var}"
-      #       if [ "$valor" == "true" ]; then
-      #         LISTA="$LISTA $pid:$deploy_type"
-      #       fi
-      #     done
+          if [ "$deploy_type" == "lambda" ]; then
+            ecrRepositoryDEV=$(yq e ".proyectos[$i].ecrRepositoryDEV" ./config.yml)
+            LambdaDEV=$(yq e ".proyectos[$i].LambdaDEV" ./config.yml)
+            echo "---- Variables Lambda ----"
+            echo "ecrRepositoryDEV: $ecrRepositoryDEV"
+            echo "LambdaDEV:        $LambdaDEV"
+            echo "-------------------------"
+            echo ">> Deploy Lambda:"
+            echo "aws lambda update-function-code \ "
+            echo "  --function-name \"$LambdaDEV\" \ "
+            echo "  --image-uri \"${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrRepositoryDEV:${{ env.VERSION }}\""
 
-      #     if [ -z "$LISTA" ]; then
-      #       echo "ERROR: Ningún proyecto seleccionado."
-      #       exit 1
-      #     fi
+          elif [ "$deploy_type" == "s3" ]; then
+            pythonfilePath=$(yq e ".proyectos[$i].pythonfilePath" ./config.yml)
+            s3RepositoryDEV=$(yq e ".proyectos[$i].s3RepositoryDEV" ./config.yml)
+            S3path=$(yq e ".proyectos[$i].S3path" ./config.yml)
+            echo "---- Variables S3 ----"
+            echo "pythonfilePath:  $pythonfilePath"
+            echo "s3RepositoryDEV: $s3RepositoryDEV"
+            echo "S3path:          $S3path"
+            echo "----------------------"
+            echo ">> Deploy S3:"
+            echo "aws s3 sync ".$pythonfilePath" "s3://$s3RepositoryDEV/$S3path" --delete"
 
-      #     # Iterar lista y ejecutar deploy según tipo
-      #     for item in $LISTA; do
-      #       PROYECTO="${item%%:*}"
-      #       deploy_type="${item##*:}"
-      #       echo ""
-      #       echo ">>> Desplegando: $PROYECTO (tipo: $deploy_type)"
-
-      #       for i in $(seq 0 $(($count - 1))); do
-      #         pid=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
-      #         [ "$pid" == "$PROYECTO" ] && break
-      #       done
-
-      #       if [ "$deploy_type" == "lambda" ]; then
-      #         ecrRepositoryDEV=$(yq e ".proyectos[$i].ecrRepositoryDEV" ./config.yml)
-      #         LambdaDEV=$(yq e ".proyectos[$i].LambdaDEV" ./config.yml)
-      #         echo "ecrRepositoryDEV: $ecrRepositoryDEV"
-      #         echo "LambdaDEV:        $LambdaDEV"
-      #         echo ">> Deploy Lambda:"
-      #         aws lambda update-function-code \
-      #           --function-name "$LambdaDEV" \
-      #           --image-uri "${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrRepositoryDEV:${{ env.VERSION }}"
-
-      #       elif [ "$deploy_type" == "s3" ]; then
-      #         pythonfilePath=$(yq e ".proyectos[$i].pythonfilePath" ./config.yml)
-      #         s3RepositoryDEV=$(yq e ".proyectos[$i].s3RepositoryDEV" ./config.yml)
-      #         S3path=$(yq e ".proyectos[$i].S3path" ./config.yml)
-      #         echo "pythonfilePath:  $pythonfilePath"
-      #         echo "s3RepositoryDEV: $s3RepositoryDEV"
-      #         echo "S3path:          $S3path"
-      #         echo ">> Deploy S3:"
-      #         aws s3 sync ".$pythonfilePath" "s3://$s3RepositoryDEV/$S3path" --delete
-
-      #       else
-      #         echo "ERROR: Tipo de deploy desconocido '$deploy_type' para proyecto '$PROYECTO'"
-      #         exit 1
-      #       fi
-      #     done
+          else
+            echo "::error::Tipo de deploy desconocido '$deploy_type' para proyecto '$PROYECTO'"
+            exit 1
+          fi
