@@ -104,13 +104,13 @@ jobs:
           name: ${{ github.event.repository.name }}_${{ env.VERSION }}
           path: .
 
-      - name: Descomprimir artefacto S3Build
+      - name: Listar contenido artefacto S3Build
         run: |
-          ZIP_NAME="${{ github.event.repository.name }}_${{ env.VERSION }}.zip"
-          echo ">> Descomprimiendo $ZIP_NAME..."
-          unzip -o "$ZIP_NAME" -d "${{ github.event.repository.name }}_${{ env.VERSION }}"
-          echo ">> Contenido descomprimido:"
-          find "${{ github.event.repository.name }}_${{ env.VERSION }}" -type f | sort
+          BASE_DIR="${{ github.event.repository.name }}_${{ env.VERSION }}"
+          echo "---- Contenido de $BASE_DIR ----"
+          ls -a
+          #find "$BASE_DIR" -type f | sort
+          echo "--------------------------------"
 
   S3Build:
     name: build compile s3
