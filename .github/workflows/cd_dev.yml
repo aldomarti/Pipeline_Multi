@@ -118,12 +118,12 @@ jobs:
               echo ">> Artefacto '$ZIP_FILE' ya existe. Se omite la descarga."
             else
               echo ">> Descargando artefacto desde Artifactory..."
-              echo "curl -fSL \"
-              echo "  -H "Authorization: Bearer ${{ secrets.ARTIFACTORY_TOKEN }}" \"
-              echo "  -o "$ZIP_FILE" \"
-              echo "  "$artifactoryUrl""
+              # curl -fSL \
+              #   -H "Authorization: Bearer ${{ secrets.ARTIFACTORY_TOKEN }}" \
+              #   -o "$ZIP_FILE" \
+              #   "$artifactoryUrl"
               echo ">> Descarga completada: $ZIP_FILE"
-              echo "ls -lh "$ZIP_FILE""
+              #ls -lh "$ZIP_FILE"
             fi
           else
             echo ">> Proyecto '$PROYECTO' tiene deploy tipo '$deploy_type'. No requiere descarga desde Artifactory."
