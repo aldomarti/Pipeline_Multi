@@ -68,7 +68,8 @@ jobs:
   Promover:
     name: Promover imagen
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    needs: check-cd-uat
+    if: needs.check-cd-uat.outputs.cd_uat_status == 'success'
     permissions:
       contents: read
       id-token: write  # Required for OIDC authentication
