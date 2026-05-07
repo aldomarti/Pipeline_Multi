@@ -101,12 +101,12 @@ jobs:
       - name: Descargar artefacto S3Build
         uses: actions/download-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}_${{ env.VERSION }}
+          name: artifact
           path: .
 
       - name: Listar contenido artefacto S3Build
         run: |
-          BASE_DIR="${{ github.event.repository.name }}_${{ env.VERSION }}"
+          BASE_DIR="artifact"
           echo "---- Contenido de $BASE_DIR ----"
           ls -a
           #find "$BASE_DIR" -type f | sort
@@ -161,10 +161,13 @@ jobs:
             echo "Archivos copiados a $dest:"
             find "$dest" -type f | sort
           done
-
+      - name: crear zip del artefacto
+        run: |
+          ARTIFACT_NAME="${{ github.event.repository.name }}_${{ env.VERSION }}"
+          zip -r "$ARTIFACT_NAME.zip" "$ARTIFACT_NAME"
       - name: Publicar artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}_${{ env.VERSION }}
-          path: ${{ github.event.repository.name }}_${{ env.VERSION }}
+          name: artifact
+          path: ${{ github.event.repository.name }}_${{ env.VERSION }}.zip
           retention-days: 1
