@@ -104,12 +104,18 @@ jobs:
           name: artifact
           path: .
 
-      - name: Listar contenido artefacto S3Build
+      - name: Descomprimir y listar artefacto S3Build
         run: |
-          BASE_DIR="artifact"
-          echo "---- Contenido de $BASE_DIR ----"
-          ls -a
-          #find "$BASE_DIR" -type f | sort
+          ZIP_NAME="${{ github.event.repository.name }}_${{ env.VERSION }}.zip"
+          DEST_DIR="${{ github.event.repository.name }}_${{ env.VERSION }}"
+
+          echo ">> Descomprimiendo $ZIP_NAME..."
+          unzip -o "$ZIP_NAME" -d "$DEST_DIR"
+
+          echo "---- Carpetas en $DEST_DIR ----"
+          find "$DEST_DIR" -mindepth 1 -maxdepth 2 -type d | sort
+          echo "---- Archivos en $DEST_DIR ----"
+          find "$DEST_DIR" -type f | sort
           echo "--------------------------------"
 
   S3Build:
