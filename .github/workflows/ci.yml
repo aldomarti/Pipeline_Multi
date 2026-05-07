@@ -107,7 +107,7 @@ jobs:
       - name: Descomprimir y listar artefacto S3Build
         run: |
           ZIP_NAME="${{ github.event.repository.name }}_${{ env.VERSION }}.zip"
-          DEST_DIR="${{ github.event.repository.name }}_${{ env.VERSION }}"
+          DEST_DIR="./"
 
           echo ">> Descomprimiendo $ZIP_NAME..."
           unzip -o "$ZIP_NAME" -d "$DEST_DIR"
