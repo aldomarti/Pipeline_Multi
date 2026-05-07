@@ -48,7 +48,7 @@ jobs:
           conclusion=$(gh run list \
             --repo ${{ github.repository }} \
             --workflow cd_dev.yml \
-            --branch main \
+            --branch v1 \
             --limit 1 \
             --json conclusion \
             --jq '.[0].conclusion')
