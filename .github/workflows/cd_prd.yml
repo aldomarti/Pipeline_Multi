@@ -77,33 +77,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # - name: Obtener Build Number del CD_UAT
-      #   id: build_number
-      #   env:
-      #     GH_TOKEN: ${{ github.token }}
-      #   run: |
-      #     if [ "${{ github.event_name }}" == "workflow_run" ]; then
-      #       # Descargar artefacto build-info del run de CD_UAT que disparó este workflow
-      #       RUN_ID="${{ github.event.workflow_run.id }}"
-      #       echo "Descargando artefacto build-info del run ID: $RUN_ID"
-      #       gh run download $RUN_ID --name build-info --dir ./build-info
-      #       CI_RUN_NUMBER=$(cat ./build-info/ci_run_number.txt)
-      #       echo "Origen: artefacto CD_UAT -> CI_RUN_NUMBER: $CI_RUN_NUMBER"
-      #     elif [ "${{ inputs.ci_build_number }}" != "0" ] && [ -n "${{ inputs.ci_build_number }}" ]; then
-      #       # Disparado manualmente con build number explícito
-      #       CI_RUN_NUMBER="${{ inputs.ci_build_number }}"
-      #       echo "Origen: workflow_dispatch (manual) -> run_number: $CI_RUN_NUMBER"
-      #     else
-      #       # Disparado manualmente sin build number: obtener el último run exitoso del CD_UAT via API
-      #       CI_RUN_NUMBER=$(gh api \
-      #         "repos/${{ github.repository }}/actions/workflows/cd_uat.yml/runs?status=success&per_page=1" \
-      #         --jq '.workflow_runs[0].run_number')
-      #       echo "Origen: workflow_dispatch (API) -> último run exitoso del CD_UAT: $CI_RUN_NUMBER"
-      #     fi
-      #     echo "TAGS=1.0.$CI_RUN_NUMBER" >> $GITHUB_ENV
-      #     echo "CI_RUN_NUMBER=$CI_RUN_NUMBER" >> $GITHUB_ENV
-      #     echo "Tag a desplegar: 1.0.$CI_RUN_NUMBER"
-
       - name: Cargar variables de entorno
         run: |
           VARS_FILE="./variables/prd/default.yml"
@@ -119,48 +92,78 @@ jobs:
       - name: Promover imagen a ECR PRD
         run: |
           echo "============================================"
-          echo " Promoviendo imagenes UAT -> PRD"
+          echo " Promoviendo proyectos UAT -> PRD"
           echo " Tag: ${{ env.VERSION }}"
           echo "============================================"
 
-          # Login a ECR
-          echo "Login a ECR"
-          echo "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_USER_DOWNLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
-
-          echo "---- Proyectos a promover ----"
-          yq e '.proyectos[] | .proyectoid + " | UAT: " + .ecrRepositoryUAT + " | PRD: " + .ecrRepositoryPRD' ./config.yml
-          echo "------------------------------"
-
-          # Iterar cada proyecto y promover imagen de UAT a PRD
+          echo "---- Proyectos en config.yml ----"
           count=$(yq e '.proyectos | length' ./config.yml)
           for i in $(seq 0 $(($count - 1))); do
-            proyectoid=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
-            ecrPRD=$(yq e ".proyectos[$i].ecrRepositoryPRD" ./config.yml)
-            ecrUAT=$(yq e ".proyectos[$i].ecrRepositoryUAT" ./config.yml)
-
-            uri_uat="${{ env.AWS_USER_DOWNLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrUAT:${{ env.VERSION }}"
-            uri_prd="${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrPRD:${{ env.VERSION }}"
-
-            echo "--- $proyectoid ---"
-            echo "Pull UAT: $uri_uat"
-            echo "docker pull $uri_uat"
-
-          #######################################
-          ### aqui tiene que ir el login a PRD
-          #######################################
-          echo "Login a PRD"
-          echo "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
-          
-            echo "Tag UAT:  $uri_uat"
-            echo "docker tag $uri_uat $uri_prd"
-
-            echo "Push PRD: $uri_prd"
-            echo "docker push $uri_prd"
+            pid=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
+            dep=$(yq e ".proyectos[$i].deploy" ./config.yml)
+            echo "  $pid  (deploy: $dep)"
           done
+          echo "--------------------------------"
+
+          # Login ECR UAT (descarga)
+          echo ">> Login ECR UAT (${{ env.AWS_USER_DOWNLOAD }})..."
+          echo "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_USER_DOWNLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+
+          # Login ECR PRD (subida)
+          echo ">> Login ECR PRD (${{ env.AWS_USER_UPLOAD }})..."
+          echo "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+
+          for i in $(seq 0 $(($count - 1))); do
+            proyectoid=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
+            deploy_type=$(yq e ".proyectos[$i].deploy" ./config.yml)
+
+            echo ""
+            echo ">>> [$proyectoid] deploy: $deploy_type"
+
+            if [ "$deploy_type" == "lambda" ]; then
+              ecrPRD=$(yq e ".proyectos[$i].ecrRepositoryPRD" ./config.yml)
+              ecrUAT=$(yq e ".proyectos[$i].ecrRepositoryUAT" ./config.yml)
+
+              uri_uat="${{ env.AWS_USER_DOWNLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrUAT:${{ env.VERSION }}"
+              uri_prd="${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrPRD:${{ env.VERSION }}"
+
+              echo "  Pull UAT: $uri_uat"
+              echo " docker pull "$uri_uat" "
+              echo " docker pull "$uri_uat" "
+
+              echo "  Tag  PRD: $uri_prd"
+              echo "docker tag "$uri_uat" "$uri_prd""
+              echo "docker tag "$uri_uat" "$uri_prd""
+
+              echo "  Push PRD: $uri_prd"
+              echo "docker push "$uri_prd""
+              echo "docker push "$uri_prd""
+
+            elif [ "$deploy_type" == "s3" ]; then
+              ZIP_FILE="${{ github.event.repository.name }}_${{ env.VERSION }}.zip"
+              artifactory_uat="${{ env.ARTIFACTORY_URL }}/dso-generic-rc/$ZIP_FILE"
+              artifactory_prd="${{ env.ARTIFACTORY_URL }}/dso-generic-release/$ZIP_FILE"
+
+              echo "  Descargando desde Artifactory UAT: $artifactory_uat"
+              echo "curl -fSL -H \"Authorization: Bearer ***\" -o \"$ZIP_FILE\" \"$artifactory_uat\""
+              echo "curl -fSL -H \"Authorization: Bearer ***\" -o \"$ZIP_FILE\" \"$artifactory_uat\""
+              echo "  Descarga completada: $ZIP_FILE"
+
+              echo "  Subiendo a Artifactory PRD: $artifactory_prd"
+              echo "curl -fSL -H \"Authorization: Bearer ***\" -T \"$ZIP_FILE\" \"$artifactory_prd\""
+              echo "curl -fSL -H \"Authorization: Bearer ***\" -T \"$ZIP_FILE\" \"$artifactory_prd\""
+              echo "  Publicacion completada en PRD"
+
+            else
+              echo "::error::Tipo de deploy desconocido '$deploy_type' para proyecto '$proyectoid'"
+              exit 1
+            fi
+          done
+
+          echo ""
           echo "============================================"
           echo " Promocion completada"
           echo "============================================"
-
 
   Deploy:
     name: Deploy PRD
