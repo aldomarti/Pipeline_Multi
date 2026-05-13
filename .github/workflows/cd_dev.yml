@@ -2,13 +2,13 @@ name: CD_DEV
 run-name: "CD-DEV-${{ github.event.inputs.version }}"
 
 on:
-  workflow_run:
-    workflows:
-      - "build"
-    types:
-      - completed
-    branches:
-      - v1
+  # workflow_run:
+  #   workflows:
+  #     - "build"
+  #   types:
+  #     - completed
+  #   branches:
+  #     - v1
   workflow_dispatch:
     inputs:
       version:

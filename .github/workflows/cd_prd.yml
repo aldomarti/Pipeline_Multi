@@ -4,13 +4,13 @@ name: CD_PRD
 run-name: "CD-PRD-${{ github.event.inputs.version }}"
 
 on:
-  workflow_run:
-    workflows:
-      - "CD_UAT"
-    types:
-      - completed
-    branches:
-      - v1
+  # workflow_run:
+  #   workflows:
+  #     - "CD_UAT"
+  #   types:
+  #     - completed
+  #   branches:
+  #     - v1
   workflow_dispatch:
     inputs:
       version:

@@ -4,13 +4,13 @@ name: CD_UAT
 run-name: "CD-UAT-${{ github.event.inputs.version }}"
 
 on:
-  workflow_run:
-    workflows:
-      - "CD_DEV"
-    types:
-      - completed
-    branches:
-      - v1
+  # workflow_run:
+  #   workflows:
+  #     - "CD_DEV"
+  #   types:
+  #     - completed
+  #   branches:
+  #     - v1
   workflow_dispatch:
     inputs:
       version:
