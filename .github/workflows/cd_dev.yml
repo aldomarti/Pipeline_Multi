@@ -1,16 +1,21 @@
 name: CD_DEV
-run-name: "CD-DEV | CI: 1.0.${{ github.event.workflow_run.run_number || inputs.ci_build_number || '(auto)' }}"
+run-name: "CD-DEV-${{ github.event.inputs.version }}"
 
 on:
-  workflow_run:
-    workflows:
-      - "CI"
-    types:
-      - completed
-    branches:
-      - main
+  # workflow_run:
+  #   workflows:
+  #     - "build"
+  #   types:
+  #     - completed
+  #   branches:
+  #     - v1
   workflow_dispatch:
     inputs:
+      version:
+        description: "Numero de version (ej: 1.0.0)"
+        required: true
+        type: string
+        default: "1.0.0"
       proyectos:
         description: 'Selecciona el proyecto a desplegar'
         required: true
@@ -20,17 +25,48 @@ on:
           - "person-connect"
           - "person-login"
           - "person-process"
-      ci_build_number:
-        description: 'Build number del CI (dejar en 0 para tomar el último exitoso automáticamente)'
-        required: false
-        default: '0'
-        type: string
+          - "castillo-connect"
+          - "castillo-login"
+          - "balcazar-process"
+
+env:
+  VERSION: ${{ github.event.inputs.version }}
 
 jobs:
+  check-ci:
+    runs-on: ubuntu-latest
+    outputs:
+      ci_status: ${{ steps.get_ci.outputs.conclusion }}
+    steps:
+      - name: Verificar ultimo resultado del pipeline build
+        id: get_ci
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          conclusion=$(gh run list \
+            --repo ${{ github.repository }} \
+            --workflow ci.yml \
+            --branch v1 \
+            --limit 1 \
+            --json conclusion \
+            --jq '.[0].conclusion')
+          echo "CI conclusion: $conclusion"
+          echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
+
+  block-on-ci-failure:
+    needs: check-ci
+    if: needs.check-ci.outputs.ci_status != 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Error - build no finalizo correctamente
+        run: |
+          echo "::error::El pipeline build termino con estado '${{ needs.check-ci.outputs.ci_status }}'. El deploy a DEV fue bloqueado."
+          exit 1
   Deploy:
     name: Deploy DEV
+    needs: check-ci
+    if: needs.check-ci.outputs.ci_status == 'success'
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     permissions:
       contents: read
       id-token: write  # Required for OIDC authentication
@@ -38,81 +74,120 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Obtener Build Number del CI
-        id: build_number
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_run" ]; then
-            # Disparado automáticamente: usar el run_number del CI que lo invocó
-            CI_RUN_NUMBER="${{ github.event.workflow_run.run_number }}"
-            echo "Origen: workflow_run -> run_number: $CI_RUN_NUMBER"
-          elif [ "${{ inputs.ci_build_number }}" != "0" ] && [ -n "${{ inputs.ci_build_number }}" ]; then
-            # Disparado manualmente con build number explícito
-            CI_RUN_NUMBER="${{ inputs.ci_build_number }}"
-            echo "Origen: workflow_dispatch (manual) -> run_number: $CI_RUN_NUMBER"
-          else
-            # Disparado manualmente sin build number: obtener el último run exitoso del CI via API
-            CI_RUN_NUMBER=$(gh api \
-              "repos/${{ github.repository }}/actions/workflows/build.yml/runs?status=success&per_page=1" \
-              --jq '.workflow_runs[0].run_number')
-            echo "Origen: workflow_dispatch (API) -> último run exitoso del CI: $CI_RUN_NUMBER"
-          fi
-          echo "TAGS=1.0.$CI_RUN_NUMBER" >> $GITHUB_ENV
-          echo "CI_RUN_NUMBER=$CI_RUN_NUMBER" >> $GITHUB_ENV
-          echo "Tag a desplegar: 1.0.$CI_RUN_NUMBER"
-
-          # Guardar CI_RUN_NUMBER como artefacto para pasar a CD_UAT
-          mkdir -p ./build-info
-          echo "$CI_RUN_NUMBER" > ./build-info/ci_run_number.txt
-
-      - name: Publicar build number como artefacto
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-info
-          path: ./build-info/ci_run_number.txt
-          retention-days: 1
-
       - name: Cargar variables de entorno
         run: |
           VARS_FILE="./variables/dev/default.yml"
           echo "---- Cargando variables desde $VARS_FILE ----"
           echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
           echo "AWS_USER_UPLOAD=$(yq e '.AWS_USER_UPLOAD' $VARS_FILE)" >> $GITHUB_ENV
-          echo "AWS_REGION: $(yq e '.AWS_REGION' $VARS_FILE)"
-          echo "AWS_USER_UPLOAD:   $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
+          echo "ARTIFACTORY_URL=$(yq e '.ARTIFACTORY_URL' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_REGION:      $(yq e '.AWS_REGION' $VARS_FILE)"
+          echo "AWS_USER_UPLOAD: $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
+          echo "ARTIFACTORY_URL: $(yq e '.ARTIFACTORY_URL' $VARS_FILE)"
           echo "---------------------------------------------"
 
-      - name: Deploy to Lambda DEV
-        run: |  
-          echo "============================================"
-          echo " Tag a desplegar: ${{ env.TAGS }}"
-          echo "============================================"
-          PROYECTO="${{ inputs.proyectos || 'person-connect' }}"
+      - name: Descargar artefacto desde Artifactory
+        run: |
+          PROYECTO="${{ inputs.proyectos }}"
 
-          # Buscar el proyecto en config.yml por proyectoid
+          # Buscar proyectoid y leer deploy type
           count=$(yq e '.proyectos | length' ./config.yml)
           encontrado=false
           for i in $(seq 0 $(($count - 1))); do
             pid=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
             if [ "$pid" == "$PROYECTO" ]; then
               encontrado=true
-              proyectoid=$pid
-              ecrRepositoryDEV=$(yq e ".proyectos[$i].ecrRepositoryDEV" ./config.yml)
-              LambdaDEV=$(yq e ".proyectos[$i].LambdaDEV" ./config.yml)
+              deploy_type=$(yq e ".proyectos[$i].deploy" ./config.yml)
               break
             fi
           done
 
           if [ "$encontrado" == "false" ]; then
-            echo "ERROR: Proyecto '$PROYECTO' no encontrado en config.yml"
+            echo "::error::Proyecto '$PROYECTO' no encontrado en config.yml"
             exit 1
           fi
 
-          echo "---- Variables cargadas ----"
-          echo "proyectoid:       $proyectoid"
-          echo "ecrRepositoryDEV: $ecrRepositoryDEV"
-          echo "LambdaDEV:        $LambdaDEV"
-          echo "----------------------------"
+          if [ "$deploy_type" == "s3" ]; then
+            ZIP_FILE="${{ github.event.repository.name }}.zip"
+            artifactoryUrl="${{ env.ARTIFACTORY_URL }}/dso-generic-snapshot/$ZIP_FILE"
 
-          echo "aws lambda update-function-code --function-name $LambdaDEV --image-uri ${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrRepositoryDEV:${{ env.TAGS }}"
+            echo "URL Artifactory: $artifactoryUrl"
+            echo "Archivo zip:     $ZIP_FILE"
+
+            if [ -f "$ZIP_FILE" ]; then
+              echo ">> Artefacto '$ZIP_FILE' ya existe. Se omite la descarga."
+            else
+              echo ">> Descargando artefacto desde Artifactory..."
+              # curl -fSL \
+              #   -H "Authorization: Bearer ${{ secrets.ARTIFACTORY_TOKEN }}" \
+              #   -o "$ZIP_FILE" \
+              #   "$artifactoryUrl"
+              echo ">> Descarga completada: $ZIP_FILE"
+              #ls -lh "$ZIP_FILE"
+
+              echo ">> Descomprimiendo $ZIP_FILE en $GITHUB_WORKSPACE..."
+              #unzip -o "$ZIP_FILE" -d "$GITHUB_WORKSPACE"
+              echo ">> Contenido descomprimido:"
+              #find "$GITHUB_WORKSPACE/${{ github.event.repository.name }}" -type f | sort
+
+            fi
+          else
+            echo ">> Proyecto '$PROYECTO' tiene deploy tipo '$deploy_type'. No requiere descarga desde Artifactory."
+          fi
+
+      - name: Deploy
+        run: |
+          echo "============================================"
+          echo " Tag a desplegar: ${{ env.VERSION }}"
+          echo "============================================"
+
+          PROYECTO="${{ inputs.proyectos }}"
+          echo "Proyecto seleccionado: $PROYECTO"
+
+          # Buscar proyectoid en config.yml
+          count=$(yq e '.proyectos | length' ./config.yml)
+          encontrado=false
+          for i in $(seq 0 $(($count - 1))); do
+            pid=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
+            if [ "$pid" == "$PROYECTO" ]; then
+              encontrado=true
+              deploy_type=$(yq e ".proyectos[$i].deploy" ./config.yml)
+              break
+            fi
+          done
+
+          if [ "$encontrado" == "false" ]; then
+            echo "::error::Proyecto '$PROYECTO' no encontrado en config.yml"
+            exit 1
+          fi
+
+          echo "deploy_type: $deploy_type"
+
+          if [ "$deploy_type" == "lambda" ]; then
+            ecrRepositoryDEV=$(yq e ".proyectos[$i].ecrRepositoryDEV" ./config.yml)
+            LambdaDEV=$(yq e ".proyectos[$i].LambdaDEV" ./config.yml)
+            echo "---- Variables Lambda ----"
+            echo "ecrRepositoryDEV: $ecrRepositoryDEV"
+            echo "LambdaDEV:        $LambdaDEV"
+            echo "-------------------------"
+            echo ">> Deploy Lambda:"
+            echo "aws lambda update-function-code \ "
+            echo "  --function-name \"$LambdaDEV\" \ "
+            echo "  --image-uri \"${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrRepositoryDEV:${{ env.VERSION }}\""
+
+          elif [ "$deploy_type" == "s3" ]; then
+            pythonfilePath=$(yq e ".proyectos[$i].pythonfilePath" ./config.yml)
+            s3RepositoryDEV=$(yq e ".proyectos[$i].s3RepositoryDEV" ./config.yml)
+            S3path=$(yq e ".proyectos[$i].S3path" ./config.yml)
+            echo "---- Variables S3 ----"
+            echo "pythonfilePath:  $pythonfilePath"
+            echo "s3RepositoryDEV: $s3RepositoryDEV"
+            echo "S3path:          $S3path"
+            echo "----------------------"
+            echo ">> Deploy S3:"
+            echo "aws s3 sync ".$pythonfilePath" "s3://$s3RepositoryDEV/$S3path" --delete"
+
+          else
+            echo "::error::Tipo de deploy desconocido '$deploy_type' para proyecto '$PROYECTO'"
+            exit 1
+          fi

@@ -1,6 +1,7 @@
 proyectos:
   - proyectoid: "person-connect" #nombre de la carpeta principal del proyecto
     dockerfilePath: "/ingesta/lambdas/person-connect/Dockerfile" #nombre del Dockerfile dentro de la carpeta del proyecto
+    deploy: "lambda" #tipo de despliegue, puede ser "lambda" o "S3"
     ecrRepositoryDEV: "MiRepositorio_dev_1" #nombre del repositorio en ECR para el ambiente DEV
     ecrRepositoryUAT: "MiRepositorio_uat_1" #nombre del repositorio en ECR para el ambiente UAT
     ecrRepositoryPRD: "MiRepositorio_prd_1" #nombre del repositorio en ECR para el ambiente PRD
@@ -10,6 +11,7 @@ proyectos:
 
   - proyectoid: "person-login"
     dockerfilePath: "/ingesta/lambdas/person-login/Dockerfile"
+    deploy: "lambda"
     ecrRepositoryDEV: "MiRepositorio_dev_2"
     ecrRepositoryUAT: "MiRepositorio_uat_2"
     ecrRepositoryPRD: "MiRepositorio_prd_2"
@@ -19,9 +21,34 @@ proyectos:
 
   - proyectoid: "person-process"
     dockerfilePath: "/transformacion/lambdas/person-process/Dockerfile"
+    deploy: "lambda"
     ecrRepositoryDEV: "MiRepositorio_dev_3"
     ecrRepositoryUAT: "MiRepositorio_uat_3"
     ecrRepositoryPRD: "MiRepositorio_prd_3"
     LambdaDEV: "MiLambda_dev_3"
     LambdaUAT: "MiLambda_uat_3"
     LambdaPRD: "MiLambda_prd_3"
+
+  - proyectoid: "castillo-connect"
+    pythonfilePath: "/ingesta/glue/castillo-connect/src"
+    deploy: "s3"
+    S3path: "castillo-connect/"
+    s3RepositoryDEV: "mi-bucket_dev_1"
+    s3RepositoryUAT: "mi-bucket_uat_1"
+    s3RepositoryPRD: "mi-bucket_prd_1"
+
+  - proyectoid: "castillo-login"
+    pythonfilePath: "/ingesta/glue/castillo-login/src"
+    deploy: "s3"
+    S3path: "castillo-login/"
+    s3RepositoryDEV: "mi-bucket_dev_1"
+    s3RepositoryUAT: "mi-bucket_uat_1"
+    s3RepositoryPRD: "mi-bucket_prd_1"
+
+  - proyectoid: "balcazar-process"
+    pythonfilePath: "/transformacion/glue/balcazar-process/src"
+    deploy: "s3"
+    S3path: "balcazar-process/"
+    s3RepositoryDEV: "mi-bucket_dev_1"
+    s3RepositoryUAT: "mi-bucket_uat_1"
+    s3RepositoryPRD: "mi-bucket_prd_1"

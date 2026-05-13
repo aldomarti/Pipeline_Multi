@@ -1,0 +1,168 @@
+name: build
+run-name: "CI-1.0.${{ github.run_number }}"
+
+on:
+  push:
+    branches:
+       - v1
+#       - develop
+#   pull_request:
+#     branches:
+#       - main
+  workflow_dispatch:
+env:
+    VERSION: 1.0.${{ github.run_number }}
+jobs:
+  lambdaBuild:
+    name: build compile docker
+    needs: S3Build
+    if: needs.S3Build.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC authentication
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cargar variables de entorno
+        run: |
+          VARS_FILE="./variables/build/default.yml"
+          echo "---- Cargando variables desde $VARS_FILE ----"
+          echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_USER_UPLOAD=$(yq e '.AWS_USER_UPLOAD' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_REGION: $(yq e '.AWS_REGION' $VARS_FILE)"
+          echo "AWS_USER_UPLOAD:   $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
+          echo "---------------------------------------------"
+
+      - name: Docker Build
+        run: |
+          set -e
+
+          echo "---- Proyectos con deploy: lambda en config.yml ----"
+          yq e '.proyectos[] | select(.deploy == "lambda") | .proyectoid' ./config.yml
+          echo "---------------------------------------------"
+
+          # Iterar solo proyectos con deploy: lambda y ejecutar docker buildx build
+          count=$(yq e '.proyectos | length' ./config.yml)
+          for i in $(seq 0 $(($count - 1))); do
+            deploy=$(yq e ".proyectos[$i].deploy" ./config.yml)
+            if [ "$deploy" != "lambda" ]; then
+              continue
+            fi
+            proy=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
+            pathfile=$(yq e ".proyectos[$i].dockerfilePath" ./config.yml)
+            tag=$proy:${{ env.VERSION }}
+            echo "Docker images built: $proy"
+            echo "Dockerfile path: $pathfile"
+            docker buildx build --file .$pathfile --tag $tag .
+          done
+
+          docker images
+
+      - name: docker login and push to ECR
+        run: |
+
+          # Ejecutar docker login para ECR
+          echo "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+
+          # Ejecutar docker tag y docker push solo para proyectos con deploy: lambda
+          count=$(yq e '.proyectos | length' ./config.yml)
+          for i in $(seq 0 $(($count - 1))); do
+            deploy=$(yq e ".proyectos[$i].deploy" ./config.yml)
+            if [ "$deploy" != "lambda" ]; then
+              continue
+            fi
+            proy=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
+            ecrDEV=$(yq e ".proyectos[$i].ecrRepositoryDEV" ./config.yml)
+
+            local_tag=$proy:${{ env.VERSION }}
+            ecr_uri="${{ env.AWS_USER_UPLOAD }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ecrDEV:${{ env.VERSION }}"
+
+            echo "Proyecto: $proy | ECR DEV: $ecrDEV"
+            echo "docker tag $local_tag -> $ecr_uri"
+            echo "docker tag $local_tag $ecr_uri"
+            echo "docker push $ecr_uri"
+            echo "docker push $ecr_uri"
+          done
+
+      - name: Descargar artefacto S3Build
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact
+          path: .
+
+      - name: Descomprimir y listar artefacto S3Build
+        run: |
+          ZIP_NAME="${{ github.event.repository.name }}_${{ env.VERSION }}.zip"
+          DEST_DIR="./"
+
+          echo ">> Descomprimiendo $ZIP_NAME..."
+          unzip -o "$ZIP_NAME" -d "$DEST_DIR"
+
+          echo "---- Carpetas en $DEST_DIR ----"
+          find "$DEST_DIR" -mindepth 1 -maxdepth 2 -type d | sort
+          echo "---- Archivos en $DEST_DIR ----"
+          find "$DEST_DIR" -type f | sort
+          echo "--------------------------------"
+
+  S3Build:
+    name: build compile s3
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC authentication
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cargar variables de entorno
+        run: |
+          VARS_FILE="./variables/build/default.yml"
+          echo "---- Cargando variables desde $VARS_FILE ----"
+          echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_USER_UPLOAD=$(yq e '.AWS_USER_UPLOAD' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_REGION: $(yq e '.AWS_REGION' $VARS_FILE)"
+          echo "AWS_USER_UPLOAD:   $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
+          echo "---------------------------------------------"
+
+      - name: Copiar archivos a artifact
+        run: |
+          set -e
+
+          echo "---- Proyectos con deploy: s3 en config.yml ----"
+          yq e '.proyectos[] | select(.deploy == "s3") | .proyectoid' ./config.yml
+          echo "---------------------------------------------"
+
+          # Iterar solo proyectos con deploy: s3
+          count=$(yq e '.proyectos | length' ./config.yml)
+          for i in $(seq 0 $(($count - 1))); do
+            deploy=$(yq e ".proyectos[$i].deploy" ./config.yml)
+            if [ "$deploy" != "s3" ]; then
+              continue
+            fi
+            proy=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
+            pythonfilePath=$(yq e ".proyectos[$i].pythonfilePath" ./config.yml)
+            s3path=$(yq e ".proyectos[$i].S3path" ./config.yml)
+
+            dest="${{ github.event.repository.name }}_${{ env.VERSION }}/$s3path"
+            echo "Proyecto: $proy"
+            echo "Origen: .$pythonfilePath"
+            echo "Destino artifact: $dest"
+            mkdir -p "$dest"
+            cp -r .$pythonfilePath/. "$dest"
+            echo "Archivos copiados a $dest:"
+            find "$dest" -type f | sort
+          done
+      - name: crear zip del artefacto
+        run: |
+          ARTIFACT_NAME="${{ github.event.repository.name }}_${{ env.VERSION }}"
+          zip -r "$ARTIFACT_NAME.zip" "$ARTIFACT_NAME"
+      - name: Publicar artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact
+          path: ${{ github.event.repository.name }}_${{ env.VERSION }}.zip
+          retention-days: 1

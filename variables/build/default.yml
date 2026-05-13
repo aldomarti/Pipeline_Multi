@@ -1,2 +1,3 @@
 AWS_REGION: "us-east-1"
 AWS_USER_UPLOAD: "251763329044"
+ARTIFACTORY_URL: "https://artifacts.mycompany.com/artifactory"
