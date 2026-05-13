@@ -52,3 +52,13 @@ proyectos:
     s3RepositoryDEV: "mi-bucket_dev_1"
     s3RepositoryUAT: "mi-bucket_uat_1"
     s3RepositoryPRD: "mi-bucket_prd_1"
+
+  - proyectoid: "ingesta-stepfunction"
+    stepFilePath: "/ingesta/ingesta-stepfunction"
+    deploy: "stepfunction"
+    path: "ingesta-stepfunction"
+
+  - proyectoid: "transformation-stepfunction"
+    stepFilePath: "/transformacion/transformation-stepfunction"
+    deploy: "stepfunction"
+    path: "transformation-stepfunction"

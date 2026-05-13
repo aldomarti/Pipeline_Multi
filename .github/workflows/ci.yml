@@ -128,7 +128,7 @@ jobs:
           echo "AWS_USER_UPLOAD:   $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
           echo "---------------------------------------------"
 
-      - name: Copiar archivos a artifact
+      - name: Copiar archivos s3 a artifact
         run: |
           set -e
 
@@ -153,6 +153,34 @@ jobs:
             echo "Destino artifact: $dest"
             mkdir -p "$dest"
             cp -r .$pythonfilePath/. "$dest"
+            echo "Archivos copiados a $dest:"
+            find "$dest" -type f | sort
+          done
+      - name: copiar archivos stepfunction a artifact
+        run: |
+          set -e
+
+          echo "---- Proyectos con deploy: stepfunction en config.yml ----"
+          yq e '.proyectos[] | select(.deploy == "stepfunction") | .proyectoid' ./config.yml
+          echo "---------------------------------------------"
+
+          # Iterar solo proyectos con deploy: stepfunction
+          count=$(yq e '.proyectos | length' ./config.yml)
+          for i in $(seq 0 $(($count - 1))); do
+            deploy=$(yq e ".proyectos[$i].deploy" ./config.yml)
+            if [ "$deploy" != "stepfunction" ]; then
+              continue
+            fi
+            proy=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
+            stepFilePath=$(yq e ".proyectos[$i].stepFilePath" ./config.yml)
+            path=$(yq e ".proyectos[$i].path" ./config.yml)
+
+            dest="${{ github.event.repository.name }}_${{ env.VERSION }}/$path"
+            echo "Proyecto: $proy"
+            echo "Origen: .$stepFilePath"
+            echo "Destino artifact: $dest"
+            mkdir -p "$dest"
+            cp -r .$stepFilePath/. "$dest"
             echo "Archivos copiados a $dest:"
             find "$dest" -type f | sort
           done
