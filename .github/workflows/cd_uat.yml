@@ -4,13 +4,6 @@ name: CD_UAT
 run-name: "CD-UAT-${{ github.event.inputs.version }}"
 
 on:
-  # workflow_run:
-  #   workflows:
-  #     - "CD_DEV"
-  #   types:
-  #     - completed
-  #   branches:
-  #     - v1
   workflow_dispatch:
     inputs:
       version:
@@ -48,7 +41,7 @@ jobs:
           conclusion=$(gh run list \
             --repo ${{ github.repository }} \
             --workflow cd_dev.yml \
-            --branch v1 \
+            --branch v3 \
             --limit 1 \
             --json conclusion \
             --jq '.[0].conclusion')

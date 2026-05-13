@@ -4,7 +4,7 @@ run-name: "CI-1.0.${{ github.run_number }}"
 on:
   push:
     branches:
-       - v1
+       - v3
 #       - develop
 #   pull_request:
 #     branches:
