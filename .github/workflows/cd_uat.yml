@@ -23,6 +23,8 @@ on:
           - "castillo-connect"
           - "castillo-login"
           - "balcazar-process"
+          - "ingesta-stepfunction"
+          - "transformation-stepfunction"
 
 env:
   VERSION: ${{ github.event.inputs.version }}
@@ -204,7 +206,7 @@ jobs:
             exit 1
           fi
 
-          if [ "$deploy_type" == "s3" ]; then
+          if [ "$deploy_type" == "s3" ] || [ "$deploy_type" == "stepfunction" ]; then
             ZIP_FILE="${{ github.event.repository.name }}.zip"
             artifactoryUrl="${{ env.ARTIFACTORY_URL }}/dso-generic-rc/$ZIP_FILE"
 
