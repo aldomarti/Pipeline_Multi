@@ -85,17 +85,21 @@ jobs:
       #     echo "---------------------------------------------"
 
       - name: Load variables
+        env:
+          VARS_FILE: ./variables/dev/default.yml
         run: |
           python3 - <<'EOF'
           import yaml, os
-          with open('./variables/dev/default.yml', 'r') as f:
+          vars_file = os.environ['VARS_FILE']
+          print(f"---- Cargando variables desde {vars_file} ----")
+          with open(vars_file, 'r') as f:
               data = yaml.safe_load(f)
           with open(os.environ['GITHUB_ENV'], 'a') as env_file:
               for key, value in data.items():
+                  print(f"{key}: {value}")
                   env_file.write(f'{key}={value}\n')
+          print("---------------------------------------------")
           EOF
-          # printenv es solo para debug, se puede eliminar luego de verificar que las variables se cargan correctamente
-          printenv
 
       - name: Descargar artefacto desde Artifactory
         run: |
