@@ -211,15 +211,15 @@ jobs:
             echo "definitionName: $definitionName"
             echo "stateMachineDEV: $stateMachineDEV"
             echo "---------- Replace json ---------"
-            grep -oP '\$\{\K[^}]+' "$stepFilePath/$definitionName" | sort -u | while read -r var; do
-              sed -i "s|\${${var}}|${!var}|g" "$stepFilePath/$definitionName"
+            grep -oP '\$\{\K[^}]+' "${{ github.workspace }}$stepFilePath/$definitionName" | sort -u | while read -r var; do
+              sed -i "s|\${${var}}|${!var}|g" "${{ github.workspace }}$stepFilePath/$definitionName"
             done
-            cat "$stepFilePath/$definitionName"
+            cat "${{ github.workspace }}$stepFilePath/$definitionName"
             echo "-------------------------------"
             echo ">> Deploy Step Function:"
             echo "aws stepfunctions update-state-machine \ "
             echo "  --state-machine-arn \"$stateMachineDEV\" \ "
-            echo "  --definition \"file://$stepFilePath/$definitionName\""
+            echo "  --definition \"file://${{ github.workspace }}$stepFilePath/$definitionName\""
 
           else
             echo "::error::Tipo de deploy desconocido '$deploy_type' para proyecto '$PROYECTO'"
