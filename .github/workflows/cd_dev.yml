@@ -70,17 +70,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Cargar variables de entorno
+      # - name: Cargar variables de entorno
+      #   run: |
+      #     VARS_FILE="./variables/dev/default.yml"
+      #     echo "---- Cargando variables desde $VARS_FILE ----"
+      #     echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
+      #     echo "AWS_USER_UPLOAD=$(yq e '.AWS_USER_UPLOAD' $VARS_FILE)" >> $GITHUB_ENV
+      #     echo "ARTIFACTORY_URL=$(yq e '.ARTIFACTORY_URL' $VARS_FILE)" >> $GITHUB_ENV
+      #     echo "FUNCTION_NAME=$(yq e '.FUNCTION_NAME' $VARS_FILE)" >> $GITHUB_ENV
+      #     echo "AWS_REGION:      $(yq e '.AWS_REGION' $VARS_FILE)"
+      #     echo "AWS_USER_UPLOAD: $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
+      #     echo "ARTIFACTORY_URL: $(yq e '.ARTIFACTORY_URL' $VARS_FILE)"
+      #     echo "FUNCTION_NAME:   $(yq e '.FUNCTION_NAME' $VARS_FILE)"
+      #     echo "---------------------------------------------"
+
+      - name: Load variables
         run: |
-          VARS_FILE="./variables/dev/default.yml"
-          echo "---- Cargando variables desde $VARS_FILE ----"
-          echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
-          echo "AWS_USER_UPLOAD=$(yq e '.AWS_USER_UPLOAD' $VARS_FILE)" >> $GITHUB_ENV
-          echo "ARTIFACTORY_URL=$(yq e '.ARTIFACTORY_URL' $VARS_FILE)" >> $GITHUB_ENV
-          echo "AWS_REGION:      $(yq e '.AWS_REGION' $VARS_FILE)"
-          echo "AWS_USER_UPLOAD: $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
-          echo "ARTIFACTORY_URL: $(yq e '.ARTIFACTORY_URL' $VARS_FILE)"
-          echo "---------------------------------------------"
+          python3 - <<'EOF'
+          import yaml, os
+          with open('./variables/dev/default.yml', 'r') as f:
+              data = yaml.safe_load(f)
+          with open(os.environ['GITHUB_ENV'], 'a') as env_file:
+              for key, value in data.items():
+                  env_file.write(f'{key}={value}\n')
+          EOF
+          # printenv es solo para debug, se puede eliminar luego de verificar que las variables se cargan correctamente
+          printenv
 
       - name: Descargar artefacto desde Artifactory
         run: |
@@ -191,6 +206,11 @@ jobs:
             echo "stepFilePath:   $stepFilePath"
             echo "definitionName: $definitionName"
             echo "stateMachineDEV: $stateMachineDEV"
+            echo "---------- Replace json ---------"
+            grep -oP '\$\{\K[^}]+' "$stepFilePath/$definitionName" | sort -u | while read -r var; do
+              sed -i "s|\${${var}}|${!var}|g" "$stepFilePath/$definitionName"
+            done
+            cat "$stepFilePath/$definitionName"
             echo "-------------------------------"
             echo ">> Deploy Step Function:"
             echo "aws stepfunctions update-state-machine \ "
