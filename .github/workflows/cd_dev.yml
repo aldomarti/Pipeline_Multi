@@ -183,6 +183,20 @@ jobs:
             echo ">> Deploy S3:"
             echo "aws s3 sync ".$pythonfilePath" "s3://$s3RepositoryDEV/$S3path" --delete"
 
+          elif [ "$deploy_type" == "stepfunction" ]; then
+            stepFilePath=$(yq e ".proyectos[$i].stepFilePath" ./config.yml)
+            definitionName=$(yq e ".proyectos[$i].definitionName" ./config.yml)
+            stateMachineDEV=$(yq e ".proyectos[$i].stateMachineDEV" ./config.yml)
+            echo "---- Variables Step Function ----"
+            echo "stepFilePath:   $stepFilePath"
+            echo "definitionName: $definitionName"
+            echo "stateMachineDEV: $stateMachineDEV"
+            echo "-------------------------------"
+            echo ">> Deploy Step Function:"
+            echo "aws stepfunctions update-state-machine \ "
+            echo "  --state-machine-arn \"$stateMachineDEV\" \ "
+            echo "  --definition \"file://$stepFilePath/$definitionName\""
+
           else
             echo "::error::Tipo de deploy desconocido '$deploy_type' para proyecto '$PROYECTO'"
             exit 1
