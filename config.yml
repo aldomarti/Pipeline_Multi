@@ -54,7 +54,7 @@ proyectos:
     s3RepositoryPRD: "mi-bucket_prd_1"
 
   - proyectoid: "ingesta-step-function1"
-    stepFilePath: "/ingesta/stepfunction/ingesta-stepfunction"
+    stepFilePath: "/ingesta/stepfunction/ingesta-step-function1"
     deploy: "stepfunction"
     path: "ingesta-step-function1"
     definitionName: "ingesta-step-function1.json"
@@ -63,7 +63,7 @@ proyectos:
     stateMachinePRD: "MiStateMachine_prd_1"
 
   - proyectoid: "ingesta-step-function2"
-    stepFilePath: "/ingesta/stepfunction/ingesta-stepfunction"
+    stepFilePath: "/ingesta/stepfunction/ingesta-step-function2"
     deploy: "stepfunction"
     path: "ingesta-step-function2"
     definitionName: "ingesta-step-function2.json"
@@ -72,7 +72,7 @@ proyectos:
     stateMachinePRD: "MiStateMachine_prd_2"
 
   - proyectoid: "transformacion-step-function"
-    stepFilePath: "/transformacion/stepfunction/transformacion-stepfunction"
+    stepFilePath: "/transformacion/stepfunction/transformacion-step-function"
     deploy: "stepfunction"
     path: "transformacion-step-function"
     definitionName: "transformacion-step-function.json"
