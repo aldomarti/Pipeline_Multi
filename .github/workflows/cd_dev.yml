@@ -21,8 +21,9 @@ on:
           - "castillo-connect"
           - "castillo-login"
           - "balcazar-process"
-          - "ingesta-stepfunction"
-          - "transformation-stepfunction"
+          - "ingesta-step-function1"
+          - "ingesta-step-function2"
+          - "transformacion-step-function"
 
 env:
   VERSION: ${{ github.event.inputs.version }}
