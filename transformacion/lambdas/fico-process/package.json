@@ -24,6 +24,9 @@
     "tslib": "^2.3.0",
     "zone.js": "~0.14.10"
   },
+  "overrides": {
+    "critters": "npm:beasties@latest"
+  },
   "devDependencies": {
     "@angular-devkit/build-angular": "^18.2.20",
     "@angular/cli": "~18.2.20",
