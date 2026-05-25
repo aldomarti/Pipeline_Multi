@@ -88,7 +88,7 @@ proyectos:
     LambdaPRD: "MiLambda_prd_1"
 
   - proyectoid: "fico-process"
-    pathNodejs: "/ingesta/lambdas/fico-process/"
+    pathNodejs: "/transformacion/lambdas/fico-process/"
     deploy: "lambda-nodejs"
     LambdaDEV: "MiLambda_dev_2"
     LambdaUAT: "MiLambda_uat_2"
