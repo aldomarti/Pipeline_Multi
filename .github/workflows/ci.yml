@@ -241,7 +241,7 @@ jobs:
             echo ">> Compilando proyecto: $proy"
             echo "   Path: .$pathNodejs"
             cd ".$pathNodejs"
-            npm ci
+            npm install
             npm run build
             zip -r "$proy.zip" dist/
             echo ">> Zip creado: $proy.zip"
