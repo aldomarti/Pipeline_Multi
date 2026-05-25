@@ -79,3 +79,17 @@ proyectos:
     stateMachineDEV: "MiStateMachine_dev_3"
     stateMachineUAT: "MiStateMachine_uat_3"
     stateMachinePRD: "MiStateMachine_prd_3"
+
+  - proyectoid: "fico-scoring"
+    pathNodejs: "/ingesta/lambdas/fico-scoring"
+    deploy: "lambda-nodejs"
+    LambdaDEV: "MiLambda_dev_1"
+    LambdaUAT: "MiLambda_uat_1"
+    LambdaPRD: "MiLambda_prd_1"
+
+  - proyectoid: "fico-process"
+    pathNodejs: "/ingesta/lambdas/fico-process"
+    deploy: "lambda-nodejs"
+    LambdaDEV: "MiLambda_dev_2"
+    LambdaUAT: "MiLambda_uat_2"
+    LambdaPRD: "MiLambda_prd_2"

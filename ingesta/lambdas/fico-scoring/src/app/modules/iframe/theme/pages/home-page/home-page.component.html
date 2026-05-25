@@ -1,0 +1,30 @@
+<div class="container">
+  <div class="panel_left">
+    <h1>CANAL WEB</h1>
+
+    <form (submit)="onSubmit()">
+      <div>
+        <label for="messageCanal">Mensaje del Canal</label>
+        <input [(ngModel)]="messageCanal" name="messageCanal" />
+      </div>
+
+      <button type="submit">Enviar Mensaje al MFE</button>
+    </form>
+
+    <ul>
+      <li *ngFor="let message of messages; let i = index">
+        {{ message }}
+      </li>
+    </ul>
+  </div>
+
+  <div class="panel_rigth">
+    <iframe
+      #iframeElement
+      src="https://thankful-desert-0b23ed80f.3.azurestaticapps.net"
+      width="700"
+      height="800"
+      frameborder="0"
+    ></iframe>
+  </div>
+</div>

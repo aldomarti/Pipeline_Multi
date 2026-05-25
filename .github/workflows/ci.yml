@@ -194,3 +194,93 @@ jobs:
           name: artifact
           path: ${{ github.event.repository.name }}_${{ env.VERSION }}.zip
           retention-days: 1
+
+  nodejsBuild:
+    name: build compile nodejs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Cargar variables de entorno
+        run: |
+          VARS_FILE="./variables/build/default.yml"
+          echo "---- Cargando variables desde $VARS_FILE ----"
+          echo "AWS_REGION=$(yq e '.AWS_REGION' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_USER_UPLOAD=$(yq e '.AWS_USER_UPLOAD' $VARS_FILE)" >> $GITHUB_ENV
+          echo "AWS_REGION: $(yq e '.AWS_REGION' $VARS_FILE)"
+          echo "AWS_USER_UPLOAD:   $(yq e '.AWS_USER_UPLOAD' $VARS_FILE)"
+          echo "---------------------------------------------"
+
+      - name: Build Node.js projects
+        run: |
+          set -e
+
+          echo "---- Proyectos con deploy: lambda-nodejs en config.yml ----"
+          yq e '.proyectos[] | select(.deploy == "lambda-nodejs") | .proyectoid' ./config.yml
+          echo "---------------------------------------------"
+
+          count=$(yq e '.proyectos | length' ./config.yml)
+          for i in $(seq 0 $(($count - 1))); do
+            deploy=$(yq e ".proyectos[$i].deploy" ./config.yml)
+            if [ "$deploy" != "lambda-nodejs" ]; then
+              continue
+            fi
+            proy=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
+            pathNodejs=$(yq e ".proyectos[$i].pathNodejs" ./config.yml)
+
+            echo ">> Compilando proyecto: $proy"
+            echo "   Path: .$pathNodejs"
+            cd ".$pathNodejs"
+            npm ci
+            npm run build
+            zip -r "$proy.zip" dist/
+            echo ">> Zip creado: $proy.zip"
+            cd -
+            echo ">> Proyecto $proy compilado exitosamente"
+          done
+
+      - name: Empaquetar artefacto Node.js
+        run: |
+          set -e
+
+          count=$(yq e '.proyectos | length' ./config.yml)
+          for i in $(seq 0 $(($count - 1))); do
+            deploy=$(yq e ".proyectos[$i].deploy" ./config.yml)
+            if [ "$deploy" != "lambda-nodejs" ]; then
+              continue
+            fi
+            proy=$(yq e ".proyectos[$i].proyectoid" ./config.yml)
+            pathNodejs=$(yq e ".proyectos[$i].pathNodejs" ./config.yml)
+
+            dest="${{ github.event.repository.name }}_${{ env.VERSION }}"
+            echo "Copiando build de $proy a $dest"
+            mkdir -p "$dest"
+            cp ".$pathNodejs/$proy.zip" "$dest/"
+            echo "Archivos copiados:"
+            find "$dest" -type f | sort
+            echo "listar archivos:"
+            ls -l "$dest"
+          done
+
+      # - name: Crear zip del artefacto Node.js
+      #   run: |
+      #     ARTIFACT_NAME="${{ github.event.repository.name }}_${{ env.VERSION }}"
+      #     zip -r "$ARTIFACT_NAME-nodejs.zip" "$ARTIFACT_NAME"
+
+      # - name: Publicar artefacto Node.js
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: artifact-nodejs
+      #     path: ${{ github.event.repository.name }}_${{ env.VERSION }}-nodejs.zip
+      #     retention-days: 1
+

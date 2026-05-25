@@ -25,6 +25,8 @@ on:
           - "balcazar-process"
           - "ingesta-stepfunction"
           - "transformation-stepfunction"
+          - "fico-scoring"
+          - "fico-process"
 
 env:
   VERSION: ${{ github.event.inputs.version }}

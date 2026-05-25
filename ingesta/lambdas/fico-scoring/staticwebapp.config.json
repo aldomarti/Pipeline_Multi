@@ -1,0 +1,9 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html"
+  },
+  "globalHeaders": {
+    "X-Frame-Options": "DENY",
+    "Content-Security-Policy": "#{DSO_ANGULAR_SWA_SAMPLE_WEB_CSP-GLOBAL}#"
+  }
+}

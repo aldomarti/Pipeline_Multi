@@ -1,0 +1,17 @@
+<a routerLink="/">Back to main home</a>
+<h1>BLOG HOME PAGE</h1>
+
+<a routerLink="/blog/about">Go to BLOG About Page</a>
+
+<ul class="card__list">
+  <li *ngFor="let post of posts" class="card__item">
+    <h4>{{ post.title }}</h4>
+    <p>{{ post.body }}</p>
+
+    <div>
+      <span *ngFor="let tag of post.tags" class="card__item_tag">
+        {{ tag }}
+      </span>
+    </div>
+  </li>
+</ul>

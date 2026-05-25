@@ -24,6 +24,8 @@ on:
           - "ingesta-step-function1"
           - "ingesta-step-function2"
           - "transformacion-step-function"
+          - "fico-scoring"
+          - "fico-process"
 
 env:
   VERSION: ${{ github.event.inputs.version }}

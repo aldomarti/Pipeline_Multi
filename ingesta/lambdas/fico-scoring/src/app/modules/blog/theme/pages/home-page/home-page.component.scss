@@ -1,0 +1,17 @@
+.card__item{
+  border-radius: 4px;
+  border: 1px solid #eee;
+  background-color: #fafafa;
+  margin: 0 8px 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.card__item_tag{
+  background: white;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  margin-right: 8px;
+}
